@@ -1,12 +1,24 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, SafeAreaView, Animated, Dimensions, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, SafeAreaView, Animated, Platform } from 'react-native';
 import SummaryCard from '../components/SummaryCard';
 import { Ionicons } from '@expo/vector-icons';
+import TransactionModal from '../components/TransactionModal';
+
+interface Transaction {
+  id: string;
+  type: 'income' | 'expense';
+  amount: number;
+  description: string;
+  date: Date;
+}
 
 export default function HomeScreen() {
   const [totalIncome, setTotalIncome] = useState(0);
   const [totalExpense, setTotalExpense] = useState(0);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [transactionType, setTransactionType] = useState<'income' | 'expense'>('income');
 
   // Animation values
   const animation = useRef(new Animated.Value(0)).current;
@@ -21,6 +33,30 @@ export default function HomeScreen() {
     }).start();
     
     setIsExpanded(!isExpanded);
+  };
+
+  const handleAddTransaction = (amount: number, description: string) => {
+    const newTransaction: Transaction = {
+      id: Date.now().toString(),
+      type: transactionType,
+      amount,
+      description,
+      date: new Date(),
+    };
+
+    setTransactions(prev => [newTransaction, ...prev]);
+
+    if (transactionType === 'income') {
+      setTotalIncome(prev => prev + amount);
+    } else {
+      setTotalExpense(prev => prev + amount);
+    }
+  };
+
+  const openModal = (type: 'income' | 'expense') => {
+    setTransactionType(type);
+    setModalVisible(true);
+    toggleMenu(); // Close the FAB menu
   };
 
   const incomeStyle = {
@@ -66,7 +102,28 @@ export default function HomeScreen() {
           <Text className='text-xl font-bold text-gray-800 mb-4'>
             Recent Transactions
           </Text>
-          {/* Transaction list will be added here */}
+          {transactions.map(transaction => (
+            <View 
+              key={transaction.id}
+              className={`flex-row justify-between items-center p-4 mb-2 rounded-xl ${
+                transaction.type === 'income' ? 'bg-green-50' : 'bg-red-50'
+              }`}
+            >
+              <View>
+                <Text className='font-semibold text-gray-800'>{transaction.description}</Text>
+                <Text className='text-sm text-gray-500'>
+                  {transaction.date.toLocaleDateString()}
+                </Text>
+              </View>
+              <Text 
+                className={`text-lg font-bold ${
+                  transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
+                }`}
+              >
+                {transaction.type === 'income' ? '+' : '-'}${transaction.amount}
+              </Text>
+            </View>
+          ))}
         </View>
       </ScrollView>
 
@@ -76,7 +133,7 @@ export default function HomeScreen() {
         <Animated.View style={[incomeStyle]} className='absolute'>
           <TouchableOpacity 
             className='bg-green-500 w-14 h-14 rounded-full items-center justify-center shadow-lg'
-            onPress={() => {/* TODO: Add income */}}
+            onPress={() => openModal('income')}
           >
             <Ionicons name="arrow-up" size={24} color="white" />
           </TouchableOpacity>
@@ -86,7 +143,7 @@ export default function HomeScreen() {
         <Animated.View style={[expenseStyle]} className='absolute'>
           <TouchableOpacity 
             className='bg-red-500 w-14 h-14 rounded-full items-center justify-center shadow-lg'
-            onPress={() => {/* TODO: Add expense */}}
+            onPress={() => openModal('expense')}
           >
             <Ionicons name="arrow-down" size={24} color="white" />
           </TouchableOpacity>
@@ -113,6 +170,14 @@ export default function HomeScreen() {
           </Animated.View>
         </TouchableOpacity>
       </View>
+
+      {/* Transaction Modal */}
+      <TransactionModal
+        isVisible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        onSubmit={handleAddTransaction}
+        type={transactionType}
+      />
     </SafeAreaView>
   );
 }
