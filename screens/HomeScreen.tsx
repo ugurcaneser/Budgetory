@@ -1,6 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, SafeAreaView, Animated, Dimensions } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
+import { View, Text, TouchableOpacity, ScrollView, SafeAreaView, Animated, Dimensions, Platform } from 'react-native';
 import SummaryCard from '../components/SummaryCard';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -11,7 +10,6 @@ export default function HomeScreen() {
 
   // Animation values
   const animation = useRef(new Animated.Value(0)).current;
-  const screenHeight = Dimensions.get('window').height;
 
   const toggleMenu = () => {
     const toValue = isExpanded ? 0 : 1;
@@ -51,7 +49,10 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView className='flex-1 bg-gray-50'>
-      <ScrollView className='flex-1'>
+      <ScrollView 
+        className='flex-1'
+        contentContainerStyle={{ paddingTop: Platform.OS === 'android' ? 25 : 0 }}
+      >
         {/* Header with Summary Card */}
         <View className='px-4'>
           <SummaryCard 
@@ -112,8 +113,6 @@ export default function HomeScreen() {
           </Animated.View>
         </TouchableOpacity>
       </View>
-
-      <StatusBar style="light" />
     </SafeAreaView>
   );
 }
