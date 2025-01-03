@@ -1,16 +1,9 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, SafeAreaView, Animated, Platform } from 'react-native';
 import SummaryCard from '../components/SummaryCard';
 import { Ionicons } from '@expo/vector-icons';
 import TransactionModal from '../components/TransactionModal';
-
-interface Transaction {
-  id: string;
-  type: 'income' | 'expense';
-  amount: number;
-  description: string;
-  date: Date;
-}
+import { Transaction, saveTransactions, saveTotals, loadTransactions, loadTotals } from '../utils/storage';
 
 export default function HomeScreen() {
   const [totalIncome, setTotalIncome] = useState(0);
@@ -22,6 +15,20 @@ export default function HomeScreen() {
 
   // Animation values
   const animation = useRef(new Animated.Value(0)).current;
+
+  // Load saved data when component mounts
+  useEffect(() => {
+    const loadSavedData = async () => {
+      const savedTransactions = await loadTransactions();
+      const savedTotals = await loadTotals();
+      
+      setTransactions(savedTransactions);
+      setTotalIncome(savedTotals.totalIncome);
+      setTotalExpense(savedTotals.totalExpense);
+    };
+
+    loadSavedData();
+  }, []);
 
   const toggleMenu = () => {
     const toValue = isExpanded ? 0 : 1;
@@ -35,22 +42,34 @@ export default function HomeScreen() {
     setIsExpanded(!isExpanded);
   };
 
-  const handleAddTransaction = (amount: number, description: string) => {
+  const handleAddTransaction = async (amount: number, description: string) => {
     const newTransaction: Transaction = {
       id: Date.now().toString(),
       type: transactionType,
       amount,
       description,
-      date: new Date(),
+      date: new Date().toISOString(),
     };
 
-    setTransactions(prev => [newTransaction, ...prev]);
+    const updatedTransactions = [newTransaction, ...transactions];
+    setTransactions(updatedTransactions);
+
+    let newTotalIncome = totalIncome;
+    let newTotalExpense = totalExpense;
 
     if (transactionType === 'income') {
-      setTotalIncome(prev => prev + amount);
+      newTotalIncome += amount;
+      setTotalIncome(newTotalIncome);
     } else {
-      setTotalExpense(prev => prev + amount);
+      newTotalExpense += amount;
+      setTotalExpense(newTotalExpense);
     }
+
+    // Save updated data
+    await Promise.all([
+      saveTransactions(updatedTransactions),
+      saveTotals(newTotalIncome, newTotalExpense),
+    ]);
   };
 
   const openModal = (type: 'income' | 'expense') => {
@@ -112,7 +131,7 @@ export default function HomeScreen() {
               <View>
                 <Text className='font-semibold text-gray-800'>{transaction.description}</Text>
                 <Text className='text-sm text-gray-500'>
-                  {transaction.date.toLocaleDateString()}
+                  {new Date(transaction.date).toLocaleDateString()}
                 </Text>
               </View>
               <Text 
