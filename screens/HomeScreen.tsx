@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, SafeAreaView, Animated, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, SafeAreaView, Animated, Platform, Image } from 'react-native';
 import SummaryCard from '../components/SummaryCard';
 import { Ionicons } from '@expo/vector-icons';
 import TransactionModal from '../components/TransactionModal';
@@ -170,23 +170,16 @@ export default function HomeScreen() {
 
         {/* Main Action Button */}
         <TouchableOpacity 
-          className='bg-blue-500 w-16 h-16 rounded-full items-center justify-center shadow-lg'
+          className='w-16 h-16 items-center justify-center'
           onPress={toggleMenu}
         >
-          <Animated.View
-            style={{
-              transform: [
-                {
-                  rotate: animation.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: ['0deg', '45deg'],
-                  }),
-                },
-              ],
-            }}
-          >
-            <Ionicons name="add" size={32} color="white" />
-          </Animated.View>
+          <View>
+            <Image 
+              source={require('../assets/mainFAB.png')} 
+              className='w-16 h-16'
+              resizeMode='contain'
+            />
+          </View>
         </TouchableOpacity>
       </View>
 
