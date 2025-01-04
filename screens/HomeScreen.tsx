@@ -131,7 +131,11 @@ export default function HomeScreen() {
               <View>
                 <Text className='font-semibold text-gray-800'>{transaction.description}</Text>
                 <Text className='text-sm text-gray-500'>
-                  {new Date(transaction.date).toLocaleDateString()}
+                  {new Date(transaction.date).toLocaleDateString('en-US', { 
+                    month: 'long',
+                    day: 'numeric',
+                    year: 'numeric'
+                  })}
                 </Text>
               </View>
               <Text 
