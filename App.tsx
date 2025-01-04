@@ -2,12 +2,15 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import "./global.css"
 import HomeScreen from './screens/HomeScreen';
+import { CurrencyProvider } from './context/CurrencyContext';
 
 export default function App() {
   return (
     <SafeAreaProvider>
-      <StatusBar style="dark" backgroundColor="#3b82f6" />
-      <HomeScreen />
+      <CurrencyProvider>
+        <HomeScreen />
+        <StatusBar style="auto" />
+      </CurrencyProvider>
     </SafeAreaProvider>
   );
 }

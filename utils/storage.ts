@@ -4,6 +4,7 @@ export interface Transaction {
   id: string;
   type: 'income' | 'expense';
   amount: number;
+  currency: string;  
   description: string;
   date: string; // Store as ISO string
 }
@@ -39,7 +40,13 @@ export const saveTotals = async (totalIncome: number, totalExpense: number) => {
 export const loadTransactions = async (): Promise<Transaction[]> => {
   try {
     const jsonValue = await AsyncStorage.getItem(STORAGE_KEYS.TRANSACTIONS);
-    return jsonValue ? JSON.parse(jsonValue) : [];
+    const transactions = jsonValue ? JSON.parse(jsonValue) : [];
+    
+    // Add currency field to old transactions if it doesn't exist
+    return transactions.map((t: Transaction) => ({
+      ...t,
+      currency: t.currency || 'USD'
+    }));
   } catch (error) {
     console.error('Error loading transactions:', error);
     return [];
@@ -57,11 +64,14 @@ export const loadTotals = async (): Promise<{
     ]);
 
     return {
-      totalIncome: parseFloat(incomeStr[1] || '0'),
-      totalExpense: parseFloat(expenseStr[1] || '0'),
+      totalIncome: parseFloat(incomeStr?.[1] || '0'),
+      totalExpense: parseFloat(expenseStr?.[1] || '0'),
     };
   } catch (error) {
     console.error('Error loading totals:', error);
-    return { totalIncome: 0, totalExpense: 0 };
+    return {
+      totalIncome: 0,
+      totalExpense: 0,
+    };
   }
 };

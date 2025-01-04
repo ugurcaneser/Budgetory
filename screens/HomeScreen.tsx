@@ -5,6 +5,8 @@ import SummaryCard from '../components/SummaryCard';
 import { Ionicons } from '@expo/vector-icons';
 import TransactionModal from '../components/TransactionModal';
 import { Transaction, saveTransactions, saveTotals, loadTransactions, loadTotals } from '../utils/storage';
+import { fetchExchangeRates, convertAmount } from '../utils/currency';
+import { useCurrency } from '../context/CurrencyContext';
 
 export default function HomeScreen() {
   const [totalIncome, setTotalIncome] = useState(0);
@@ -13,23 +15,37 @@ export default function HomeScreen() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [transactionType, setTransactionType] = useState<'income' | 'expense'>('income');
+  const [exchangeRates, setExchangeRates] = useState<{[key: string]: number}>({});
+  const { selectedCurrency } = useCurrency();
 
   // Animation values
   const animation = useRef(new Animated.Value(0)).current;
 
-  // Load saved data when component mounts
+  // Load saved data and exchange rates when component mounts or currency changes
   useEffect(() => {
     const loadSavedData = async () => {
       const savedTransactions = await loadTransactions();
       const savedTotals = await loadTotals();
+      const rates = await fetchExchangeRates(selectedCurrency.code);
       
       setTransactions(savedTransactions);
       setTotalIncome(savedTotals.totalIncome);
       setTotalExpense(savedTotals.totalExpense);
+      setExchangeRates(rates);
     };
 
     loadSavedData();
-  }, []);
+  }, [selectedCurrency.code]);
+
+  const formatAmount = (amount: number, currency: string) => {
+    if (!exchangeRates[currency]) return `${selectedCurrency.symbol}${amount.toFixed(2)}`;
+    
+    const convertedAmount = currency === selectedCurrency.code
+      ? amount
+      : convertAmount(amount, currency, selectedCurrency.code, exchangeRates);
+    
+    return `${selectedCurrency.symbol}${convertedAmount.toFixed(2)}`;
+  };
 
   const toggleMenu = () => {
     const toValue = isExpanded ? 0 : 1;
@@ -43,11 +59,12 @@ export default function HomeScreen() {
     setIsExpanded(!isExpanded);
   };
 
-  const handleAddTransaction = async (amount: number, description: string) => {
+  const handleAddTransaction = async (amount: number, description: string, currency: string) => {
     const newTransaction: Transaction = {
       id: Date.now().toString(),
       type: transactionType,
       amount,
+      currency,
       description,
       date: new Date().toISOString(),
     };
@@ -55,14 +72,18 @@ export default function HomeScreen() {
     const updatedTransactions = [newTransaction, ...transactions];
     setTransactions(updatedTransactions);
 
+    // Convert amount to USD before updating totals
+    const rates = await fetchExchangeRates('USD');
+    const amountInUSD = currency === 'USD' ? amount : convertAmount(amount, currency, 'USD', rates);
+
     let newTotalIncome = totalIncome;
     let newTotalExpense = totalExpense;
 
     if (transactionType === 'income') {
-      newTotalIncome += amount;
+      newTotalIncome += amountInUSD;
       setTotalIncome(newTotalIncome);
     } else {
-      newTotalExpense += amount;
+      newTotalExpense += amountInUSD;
       setTotalExpense(newTotalExpense);
     }
 
@@ -199,18 +220,18 @@ export default function HomeScreen() {
                     <Text className='font-semibold text-gray-800'>{transaction.description}</Text>
                     <Text className='text-sm text-gray-500'>
                       {new Date(transaction.date).toLocaleDateString('en-US', { 
-                        month: 'long',
-                        day: 'numeric',
-                        year: 'numeric'
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
                       })}
                     </Text>
                   </View>
                   <Text 
-                    className={`text-lg font-bold ${
+                    className={`text-lg font-semibold ${
                       transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
                     }`}
                   >
-                    {transaction.type === 'income' ? '+' : '-'}${transaction.amount}
+                    {transaction.type === 'income' ? '+' : '-'} {formatAmount(transaction.amount, transaction.currency)}
                   </Text>
                 </View>
               </Swipeable>
