@@ -112,9 +112,10 @@ export default function HomeScreen() {
 
     return (
       <Animated.View 
-        className="bg-red-500 justify-center items-center rounded-xl mr-2"
+        className="bg-red-500 justify-center items-center rounded-lg mr-2"
         style={{
           width: 64,
+          height: 64,
           transform: [{ translateX: trans }],
           opacity,
         }}
