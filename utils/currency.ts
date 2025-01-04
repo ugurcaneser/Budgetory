@@ -20,7 +20,7 @@ export async function fetchExchangeRates(baseCurrency: string): Promise<Exchange
     const convertedRates: ExchangeRates = {};
     
     Object.entries(eurRates).forEach(([currency, rate]) => {
-      convertedRates[currency] = rate / baseRate;
+      convertedRates[currency] = Number(rate) / baseRate;
     });
 
     return convertedRates;
