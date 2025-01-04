@@ -217,6 +217,15 @@ export default function HomeScreen() {
           </View>
         </ScrollView>
 
+        {/* Overlay for closing FAB menu */}
+        {isExpanded && (
+          <TouchableOpacity
+            className="absolute inset-0"
+            onPress={toggleMenu}
+            activeOpacity={1}
+          />
+        )}
+
         {/* Floating Action Buttons */}
         <View className='absolute bottom-8 left-0 right-0 items-center'>
           {/* Income Button */}
