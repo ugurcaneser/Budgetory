@@ -103,7 +103,7 @@ export default function HomeScreen() {
   };
 
   return (
-    <SafeAreaView className='flex-1 bg-gray-50'>
+    <SafeAreaView className='flex-1 bg-white'>
       <ScrollView 
         className='flex-1'
         contentContainerStyle={{ paddingTop: Platform.OS === 'android' ? 25 : 0 }}
@@ -117,7 +117,7 @@ export default function HomeScreen() {
         </View>
 
         {/* Recent Transactions */}
-        <View className='p-4 mt-4 mb-32'>
+        <View className='p-6 mt-4 mb-32'>
           <Text className='text-xl font-bold text-gray-800 mb-4'>
             Recent Transactions
           </Text>
