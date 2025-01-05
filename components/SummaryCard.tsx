@@ -66,7 +66,7 @@ export default function SummaryCard({ totalIncome, totalExpense }: SummaryCardPr
           {isLoading ? (
             <ActivityIndicator size="small" color="#000" />
           ) : (
-            <Text className='text-black text-3xl font-bold'>
+            <Text className='ml-10 text-black text-3xl font-bold'>
               {selectedCurrency.symbol}{formatAmount(convertedBalance)}
             </Text>
           )}
