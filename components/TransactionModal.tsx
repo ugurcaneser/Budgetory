@@ -73,11 +73,20 @@ export default function TransactionModal({ isVisible, onClose, onSubmit, type }:
                 <Ionicons name="chevron-down" size={16} color="#666" />
               </TouchableOpacity>
               <TextInput
-                className="flex-1 h-12 px-4 bg-gray-100 rounded-xl text-lg"
-                keyboardType="decimal-pad"
+                className="flex-1 h-12 px-4 bg-gray-100 rounded-xl"
+                keyboardType="numeric"
                 placeholder="0.00"
                 value={amount}
-                onChangeText={setAmount}
+                onChangeText={(text) => {
+                  // Only allow numbers and a single decimal point
+                  const numericText = text.replace(/[^0-9.]/g, '');
+                  // Prevent multiple decimal points
+                  const parts = numericText.split('.');
+                  if (parts.length > 2) {
+                    return;
+                  }
+                  setAmount(numericText);
+                }}
               />
             </View>
           </View>
@@ -100,7 +109,7 @@ export default function TransactionModal({ isVisible, onClose, onSubmit, type }:
             }`}
             onPress={handleSubmit}
           >
-            <Text className="text-white text-center text-lg font-semibold">
+            <Text className="text-white text-lg font-semibold text-center">
               Add {type === 'income' ? 'Income' : 'Expense'}
             </Text>
           </TouchableOpacity>
@@ -117,7 +126,7 @@ export default function TransactionModal({ isVisible, onClose, onSubmit, type }:
         <View className="flex-1 justify-end">
           <View className="bg-white rounded-t-3xl">
             <View className="p-4 border-b border-gray-200">
-              <Text className="text-xl font-bold text-center">Select Currency</Text>
+              <Text className="text-xl font-bold">Select Currency</Text>
             </View>
             {currencies.map((currency) => (
               <TouchableOpacity
@@ -125,7 +134,7 @@ export default function TransactionModal({ isVisible, onClose, onSubmit, type }:
                 className="p-4 border-b border-gray-100"
                 onPress={() => handleCurrencySelect(currency)}
               >
-                <Text className="text-lg text-center">
+                <Text className="text-lg">
                   {currency.code} ({currency.symbol})
                 </Text>
               </TouchableOpacity>
@@ -134,7 +143,7 @@ export default function TransactionModal({ isVisible, onClose, onSubmit, type }:
               className="p-4"
               onPress={() => setShowCurrencyModal(false)}
             >
-              <Text className="text-lg text-center text-red-500">Cancel</Text>
+              <Text className="text-lg text-red-500">Cancel</Text>
             </TouchableOpacity>
           </View>
         </View>
