@@ -101,12 +101,18 @@ export default function HomeScreen() {
     const updatedTransactions = transactions.filter(t => t.id !== transactionId);
     setTransactions(updatedTransactions);
 
+    // Convert amount to USD before updating totals
+    const rates = await fetchExchangeRates('USD');
+    const amountInUSD = transactionToDelete.currency === 'USD' 
+      ? transactionToDelete.amount 
+      : convertAmount(transactionToDelete.amount, transactionToDelete.currency, 'USD', rates);
+
     // Update totals
     if (transactionToDelete.type === 'income') {
-      const newTotalIncome = totalIncome - transactionToDelete.amount;
+      const newTotalIncome = totalIncome - amountInUSD;
       setTotalIncome(newTotalIncome);
     } else {
-      const newTotalExpense = totalExpense - transactionToDelete.amount;
+      const newTotalExpense = totalExpense - amountInUSD;
       setTotalExpense(newTotalExpense);
     }
 
@@ -114,8 +120,8 @@ export default function HomeScreen() {
     await Promise.all([
       saveTransactions(updatedTransactions),
       saveTotals(
-        transactionToDelete.type === 'income' ? totalIncome - transactionToDelete.amount : totalIncome,
-        transactionToDelete.type === 'expense' ? totalExpense - transactionToDelete.amount : totalExpense
+        transactionToDelete.type === 'income' ? totalIncome - amountInUSD : totalIncome,
+        transactionToDelete.type === 'expense' ? totalExpense - amountInUSD : totalExpense
       ),
     ]);
   };
