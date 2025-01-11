@@ -266,7 +266,7 @@ export default function HomeScreen() {
                           transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
                         }`}
                       >
-                        {transaction.type === 'income' ? '+' : '-'} {selectedCurrency.symbol}{transaction.amount.toFixed(2).replace('.', ',')}
+                        {transaction.type === 'income' ? '+' : '-'} {formatAmount(transaction.amount, transaction.currency)}
                       </Text>
                     </View>
                     {index < transactions.length - 1 && (
