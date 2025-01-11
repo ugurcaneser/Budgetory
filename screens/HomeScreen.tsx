@@ -229,42 +229,40 @@ export default function HomeScreen() {
                   <View className='py-3'>
                     <View className='flex-row justify-between items-center'>
                       <View className='flex-row items-center flex-1 mr-3'>
-                        <View className={`w-8 h-8 rounded-full items-center justify-center mr-2 ${
-                          transaction.type === 'income' ? 'bg-green-50' : 'bg-red-50'
-                        }`}>
-                          {category.image ? (
-                            <Image 
-                              source={category.image}
-                              className='w-5 h-5'
-                              resizeMode='contain'
-                            />
-                          ) : (
+                        {category.image ? (
+                          <Image 
+                            source={category.image}
+                            className='w-8 h-8 mr-3'
+                            resizeMode='contain'
+                          />
+                        ) : (
+                          <View className="mr-3">
                             <Ionicons 
                               name={category.icon as any} 
-                              size={16} 
+                              size={24} 
                               color={transaction.type === 'income' ? '#22c55e' : '#ef4444'} 
                             />
-                          )}
-                        </View>
+                          </View>
+                        )}
                         <View className='flex-1'>
                           <View className='flex-row items-center'>
-                            <Text className='text-sm font-medium text-gray-800'>{category.name}</Text>
-                            {transaction.description && (
-                              <Text className='text-xs text-gray-400 ml-2' numberOfLines={1}>
-                                • {transaction.description}
-                              </Text>
-                            )}
+                            <Text className='text-base font-medium text-gray-800'>{category.name}</Text>
+                            <Text className='text-sm text-gray-400 ml-2'>
+                              {new Date(transaction.date).toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: 'numeric'
+                              })}
+                            </Text>
                           </View>
-                          <Text className='text-xs text-gray-400'>
-                            {new Date(transaction.date).toLocaleDateString('en-US', {
-                              month: 'short',
-                              day: 'numeric'
-                            })}
-                          </Text>
+                          {transaction.description && (
+                            <Text className='text-sm text-gray-400' numberOfLines={1}>
+                              {transaction.description}
+                            </Text>
+                          )}
                         </View>
                       </View>
                       <Text 
-                        className={`text-sm font-medium ${
+                        className={`text-base font-medium ${
                           transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
                         }`}
                       >

@@ -12,28 +12,28 @@ export const incomeCategories: Category[] = [
     id: 'salary',
     name: 'Salary',
     type: 'income',
-    image: null,
+    image: require('../assets/category_icons/salary.png'),
     icon: 'cash'
   },
   {
     id: 'investment',
     name: 'Investment',
     type: 'income',
-    image: null,
+    image: require('../assets/category_icons/investment.png'),
     icon: 'trending-up'
   },
   {
     id: 'freelance',
     name: 'Freelance',
     type: 'income',
-    image: null,
+    image: require('../assets/category_icons/freelance.png'),
     icon: 'laptop'
   },
   {
     id: 'other_income',
     name: 'Other',
     type: 'income',
-    image: null,
+    image: require('../assets/category_icons/other_income.png'),
     icon: 'add-circle'
   }
 ];
@@ -48,31 +48,18 @@ export const expenseCategories: Category[] = [
     icon: 'restaurant'
   },
   {
-    id: 'shopping',
-    name: 'Shopping',
-    type: 'expense',
-    image: null,
-    icon: 'cart'
-  },
-  {
     id: 'transport',
     name: 'Transport',
     type: 'expense',
-    image: null,
+    image: require('../assets/category_icons/transport.png'),
     icon: 'car'
   },
-  {
-    id: 'bills',
-    name: 'Bills',
-    type: 'expense',
-    image: null,
-    icon: 'receipt'
-  },
+  
   {
     id: 'other_expense',
     name: 'Other',
     type: 'expense',
-    image: null,
+    image: require('../assets/category_icons/other_expense.png'),
     icon: 'add-circle'
   }
 ];
