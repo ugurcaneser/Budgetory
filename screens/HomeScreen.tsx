@@ -7,6 +7,7 @@ import TransactionModal from '../components/TransactionModal';
 import { Transaction, saveTransactions, saveTotals, loadTransactions, loadTotals } from '../utils/storage';
 import { fetchExchangeRates, convertAmount } from '../utils/currency';
 import { useCurrency } from '../context/CurrencyContext';
+import { incomeCategories, expenseCategories } from '../utils/categories';
 
 export default function HomeScreen() {
   const [totalIncome, setTotalIncome] = useState(0);
@@ -59,7 +60,7 @@ export default function HomeScreen() {
     setIsExpanded(!isExpanded);
   };
 
-  const handleAddTransaction = async (amount: number, description: string, currency: string) => {
+  const handleAddTransaction = async (amount: number, description: string, currency: string, categoryId: string) => {
     const newTransaction: Transaction = {
       id: Date.now().toString(),
       type: transactionType,
@@ -67,6 +68,7 @@ export default function HomeScreen() {
       currency,
       description,
       date: new Date().toISOString(),
+      categoryId,
     };
 
     const updatedTransactions = [newTransaction, ...transactions];
@@ -159,6 +161,11 @@ export default function HomeScreen() {
     );
   };
 
+  const getCategoryDetails = (transaction: Transaction) => {
+    const categories = transaction.type === 'income' ? incomeCategories : expenseCategories;
+    return categories.find(cat => cat.id === transaction.categoryId) || categories[0];
+  };
+
   const openModal = (type: 'income' | 'expense') => {
     setTransactionType(type);
     setModalVisible(true);
@@ -205,43 +212,72 @@ export default function HomeScreen() {
           </View>
 
           {/* Recent Transactions */}
-          <View className='p-6 mt-4 mb-32'>
-            <Text className='text-xl font-bold text-gray-800 mb-4'>
+          <View className='px-6 mt-4 mb-32'>
+            <Text className='text-xl font-bold text-gray-800 mb-2'>
               Recent Transactions
             </Text>
-            {transactions.map(transaction => (
-              <Swipeable
-                key={transaction.id}
-                renderRightActions={(progress, dragX) => 
-                  renderRightActions(progress, dragX, () => handleDeleteTransaction(transaction.id))
-                }
-                rightThreshold={40}
-              >
-                <View 
-                  className={`flex-row justify-between items-center p-4 mb-2 rounded-xl ${
-                    transaction.type === 'income' ? 'bg-green-50' : 'bg-red-50'
-                  }`}
+            {transactions.map((transaction, index) => {
+              const category = getCategoryDetails(transaction);
+              return (
+                <Swipeable
+                  key={transaction.id}
+                  renderRightActions={(progress, dragX) => 
+                    renderRightActions(progress, dragX, () => handleDeleteTransaction(transaction.id))
+                  }
+                  rightThreshold={40}
                 >
-                  <View>
-                    <Text className='font-semibold text-gray-800'>{transaction.description}</Text>
-                    <Text className='text-sm text-gray-500'>
-                      {new Date(transaction.date).toLocaleDateString('en-US', { 
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric'
-                      })}
-                    </Text>
+                  <View className='py-3'>
+                    <View className='flex-row justify-between items-center'>
+                      <View className='flex-row items-center flex-1 mr-3'>
+                        <View className={`w-8 h-8 rounded-full items-center justify-center mr-2 ${
+                          transaction.type === 'income' ? 'bg-green-50' : 'bg-red-50'
+                        }`}>
+                          {category.image ? (
+                            <Image 
+                              source={category.image}
+                              className='w-5 h-5'
+                              resizeMode='contain'
+                            />
+                          ) : (
+                            <Ionicons 
+                              name={category.icon as any} 
+                              size={16} 
+                              color={transaction.type === 'income' ? '#22c55e' : '#ef4444'} 
+                            />
+                          )}
+                        </View>
+                        <View className='flex-1'>
+                          <View className='flex-row items-center'>
+                            <Text className='text-sm font-medium text-gray-800'>{category.name}</Text>
+                            {transaction.description && (
+                              <Text className='text-xs text-gray-400 ml-2' numberOfLines={1}>
+                                • {transaction.description}
+                              </Text>
+                            )}
+                          </View>
+                          <Text className='text-xs text-gray-400'>
+                            {new Date(transaction.date).toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric'
+                            })}
+                          </Text>
+                        </View>
+                      </View>
+                      <Text 
+                        className={`text-sm font-medium ${
+                          transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
+                        }`}
+                      >
+                        {transaction.type === 'income' ? '+' : '-'} {selectedCurrency.symbol}{transaction.amount.toFixed(2).replace('.', ',')}
+                      </Text>
+                    </View>
+                    {index < transactions.length - 1 && (
+                      <View className='h-[0.5px] bg-gray-100 mt-3' />
+                    )}
                   </View>
-                  <Text 
-                    className={`text-lg font-semibold ${
-                      transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
-                    }`}
-                  >
-                    {transaction.type === 'income' ? '+' : '-'} {formatAmount(transaction.amount, transaction.currency)}
-                  </Text>
-                </View>
-              </Swipeable>
-            ))}
+                </Swipeable>
+              );
+            })}
           </View>
         </ScrollView>
 

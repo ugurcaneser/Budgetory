@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, Modal, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, Modal, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { incomeCategories, expenseCategories, Category } from '../utils/categories';
 
 interface TransactionModalProps {
   isVisible: boolean;
   onClose: () => void;
-  onSubmit: (amount: number, description: string, currency: string) => void;
+  onSubmit: (amount: number, description: string, currency: string, categoryId: string) => void;
   type: 'income' | 'expense';
 }
 
@@ -21,36 +22,45 @@ export default function TransactionModal({ isVisible, onClose, onSubmit, type }:
   const [description, setDescription] = useState('');
   const [selectedCurrency, setSelectedCurrency] = useState(currencies[0]);
   const [showCurrencyModal, setShowCurrencyModal] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+
+  const categories = type === 'income' ? incomeCategories : expenseCategories;
 
   const handleSubmit = () => {
+    if (!amount || !selectedCategory) return;
+
     const numAmount = parseFloat(amount);
     if (isNaN(numAmount) || numAmount <= 0) {
       // TODO: Add error handling
       return;
     }
-    onSubmit(numAmount, description, selectedCurrency.code);
+
+    onSubmit(
+      numAmount,
+      description,
+      selectedCurrency.code,
+      selectedCategory.id
+    );
+
+    // Reset form
     setAmount('');
     setDescription('');
+    setSelectedCategory(null);
     onClose();
-  };
-
-  const handleCurrencySelect = (currency: typeof currencies[0]) => {
-    setSelectedCurrency(currency);
-    setShowCurrencyModal(false);
   };
 
   return (
     <Modal
       visible={isVisible}
-      animationType="slide"
       transparent={true}
+      animationType="slide"
       onRequestClose={onClose}
     >
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         className="flex-1 justify-end"
       >
-        <View className="bg-white rounded-t-3xl p-6 h-96">
+        <View className="bg-white rounded-t-3xl p-6">
           {/* Header */}
           <View className="flex-row justify-between items-center mb-6">
             <Text className="text-2xl font-bold text-gray-800">
@@ -60,6 +70,45 @@ export default function TransactionModal({ isVisible, onClose, onSubmit, type }:
               <Ionicons name="close" size={24} color="#666" />
             </TouchableOpacity>
           </View>
+
+          {/* Categories */}
+          <Text className="text-gray-600 mb-2">Category</Text>
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false}
+            className="mb-4"
+          >
+            {categories.map((category) => (
+              <TouchableOpacity
+                key={category.id}
+                onPress={() => setSelectedCategory(category)}
+                className={`mr-4 items-center justify-center p-2 rounded-xl ${
+                  selectedCategory?.id === category.id 
+                    ? type === 'income' ? 'bg-green-100' : 'bg-red-100'
+                    : 'bg-gray-50'
+                }`}
+              >
+                {category.image ? (
+                  <Image 
+                    source={category.image}
+                    className="w-10 h-10 mb-1"
+                    resizeMode="contain"
+                  />
+                ) : (
+                  <View className="w-10 h-10 mb-1 items-center justify-center">
+                    <Ionicons 
+                      name={category.icon as any} 
+                      size={24} 
+                      color={selectedCategory?.id === category.id 
+                        ? type === 'income' ? '#22c55e' : '#ef4444'
+                        : '#666'} 
+                    />
+                  </View>
+                )}
+                <Text className="text-sm text-center">{category.name}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
 
           {/* Amount Input */}
           <View className="mb-4">
@@ -82,9 +131,7 @@ export default function TransactionModal({ isVisible, onClose, onSubmit, type }:
                   const numericText = text.replace(/[^0-9.]/g, '');
                   // Prevent multiple decimal points
                   const parts = numericText.split('.');
-                  if (parts.length > 2) {
-                    return;
-                  }
+                  if (parts.length > 2) return;
                   setAmount(numericText);
                 }}
               />
@@ -105,9 +152,14 @@ export default function TransactionModal({ isVisible, onClose, onSubmit, type }:
           {/* Submit Button */}
           <TouchableOpacity
             className={`py-4 rounded-xl ${
-              type === 'income' ? 'bg-green-500' : 'bg-red-500'
+              !selectedCategory || !amount
+                ? 'bg-gray-300'
+                : type === 'income' 
+                  ? 'bg-green-500' 
+                  : 'bg-red-500'
             }`}
             onPress={handleSubmit}
+            disabled={!selectedCategory || !amount}
           >
             <Text className="text-white text-lg font-semibold text-center">
               Add {type === 'income' ? 'Income' : 'Expense'}
@@ -132,7 +184,10 @@ export default function TransactionModal({ isVisible, onClose, onSubmit, type }:
               <TouchableOpacity
                 key={currency.code}
                 className="p-4 border-b border-gray-100"
-                onPress={() => handleCurrencySelect(currency)}
+                onPress={() => {
+                  setSelectedCurrency(currency);
+                  setShowCurrencyModal(false);
+                }}
               >
                 <Text className="text-lg">
                   {currency.code} ({currency.symbol})

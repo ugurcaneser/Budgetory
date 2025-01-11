@@ -4,9 +4,10 @@ export interface Transaction {
   id: string;
   type: 'income' | 'expense';
   amount: number;
-  currency: string;  
+  currency: string;
   description: string;
-  date: string; // Store as ISO string
+  date: string;
+  categoryId: string;
 }
 
 const STORAGE_KEYS = {
@@ -45,7 +46,8 @@ export const loadTransactions = async (): Promise<Transaction[]> => {
     // Add currency field to old transactions if it doesn't exist
     return transactions.map((t: Transaction) => ({
       ...t,
-      currency: t.currency || 'USD'
+      currency: t.currency || 'USD',
+      categoryId: t.categoryId || '',
     }));
   } catch (error) {
     console.error('Error loading transactions:', error);
