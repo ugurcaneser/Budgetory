@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, SafeAreaView, Animated, Platform, Image } from 'react-native';
-import { GestureHandlerRootView, Swipeable } from 'react-native-gesture-handler';
+import { View, Text, TouchableOpacity, ScrollView, SafeAreaView, Animated, Platform, Image, Alert } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import SummaryCard from '../components/SummaryCard';
 import { Ionicons } from '@expo/vector-icons';
 import TransactionModal from '../components/TransactionModal';
@@ -128,36 +128,22 @@ export default function HomeScreen() {
     ]);
   };
 
-  const renderRightActions = (progress: Animated.AnimatedInterpolation<number>, dragX: Animated.AnimatedInterpolation<number>, onDelete: () => void) => {
-    const trans = progress.interpolate({
-      inputRange: [0, 1],
-      outputRange: [64, 0],
-    });
-
-    const opacity = progress.interpolate({
-      inputRange: [0, 0.5, 1],
-      outputRange: [0, 0.3, 1],
-    });
-
-    return (
-      <Animated.View 
-        className="bg-red-500 justify-center items-center rounded-lg mr-2"
-        style={{
-          width: 64,
-          height: 64,
-          transform: [{ translateX: trans }],
-          opacity,
-        }}
-      >
-        <TouchableOpacity 
-          onPress={onDelete}
-          className="w-full h-full justify-center items-center"
-        >
-          <Animated.View>
-            <Ionicons name="trash-outline" size={24} color="white" />
-          </Animated.View>
-        </TouchableOpacity>
-      </Animated.View>
+  const handleLongPress = (transaction: Transaction) => {
+    Alert.alert(
+      'Delete Transaction',
+      'Are you sure you want to delete this transaction?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => handleDeleteTransaction(transaction.id),
+        },
+      ],
+      { cancelable: true }
     );
   };
 
@@ -219,12 +205,10 @@ export default function HomeScreen() {
             {transactions.map((transaction, index) => {
               const category = getCategoryDetails(transaction);
               return (
-                <Swipeable
+                <TouchableOpacity
                   key={transaction.id}
-                  renderRightActions={(progress, dragX) => 
-                    renderRightActions(progress, dragX, () => handleDeleteTransaction(transaction.id))
-                  }
-                  rightThreshold={40}
+                  onLongPress={() => handleLongPress(transaction)}
+                  delayLongPress={300}
                 >
                   <View className='py-3'>
                     <View className='flex-row justify-between items-center'>
@@ -273,7 +257,7 @@ export default function HomeScreen() {
                       <View className='h-[0.5px] bg-gray-100 mt-3' />
                     )}
                   </View>
-                </Swipeable>
+                </TouchableOpacity>
               );
             })}
           </View>
