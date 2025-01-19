@@ -8,6 +8,7 @@ import { Transaction, saveTransactions, saveTotals, loadTransactions, loadTotals
 import { fetchExchangeRates, convertAmount } from '../utils/currency';
 import { useCurrency } from '../context/CurrencyContext';
 import { incomeCategories, expenseCategories } from '../utils/categories';
+import { useNavigation } from '@react-navigation/native';
 
 export default function HomeScreen() {
   const [totalIncome, setTotalIncome] = useState(0);
@@ -18,6 +19,7 @@ export default function HomeScreen() {
   const [transactionType, setTransactionType] = useState<'income' | 'expense'>('income');
   const [exchangeRates, setExchangeRates] = useState<{[key: string]: number}>({});
   const { selectedCurrency } = useCurrency();
+  const navigation = useNavigation();
 
   // Animation values
   const animation = useRef(new Animated.Value(0)).current;
@@ -219,7 +221,7 @@ export default function HomeScreen() {
             <Text className='text-xl font-bold text-gray-800 mb-2'>
               Recent Transactions
             </Text>
-            {transactions.map((transaction, index) => {
+            {transactions.slice(0, 5).map((transaction, index) => {
               const category = getCategoryDetails(transaction);
               return (
                 <TouchableOpacity
@@ -277,6 +279,18 @@ export default function HomeScreen() {
                 </TouchableOpacity>
               );
             })}
+
+            {/* Show More Button */}
+            {transactions.length > 5 && (
+              <TouchableOpacity 
+                className='mt-4 py-3 bg-gray-50 rounded-lg'
+                onPress={() => navigation.navigate('Transactions', { transactions })}
+              >
+                <Text className='text-center text-gray-600 font-medium'>
+                  Show More
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
         </ScrollView>
 
