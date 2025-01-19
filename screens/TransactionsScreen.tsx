@@ -27,16 +27,24 @@ export default function TransactionsScreen({ route, navigation }: TransactionsSc
   return (
     <SafeAreaView className='flex-1 bg-white'>
       {/* Header */}
-      <View className='flex-row items-center px-4 py-2 border-b border-gray-100'>
+      <View className='flex-row items-center justify-between px-4 py-2 border-b border-gray-100'>
+        <View className='flex-row items-center'>
+          <TouchableOpacity
+            className='p-2'
+            onPress={() => navigation.goBack()}
+          >
+            <Ionicons name="arrow-back" size={24} color="#374151" />
+          </TouchableOpacity>
+          <Text className='text-xl font-bold text-gray-800 ml-2'>
+            All Transactions
+          </Text>
+        </View>
         <TouchableOpacity
           className='p-2'
-          onPress={() => navigation.goBack()}
+          onPress={() => Alert.alert('Filter', 'Filter functionality will be added soon')}
         >
-          <Ionicons name="arrow-back" size={24} color="#374151" />
+          <Ionicons name="filter" size={24} color="#374151" />
         </TouchableOpacity>
-        <Text className='text-xl font-bold text-gray-800 ml-2'>
-          All Transactions
-        </Text>
       </View>
 
       <ScrollView className='flex-1'>
