@@ -185,9 +185,26 @@ export default function HomeScreen() {
   return (
     <SafeAreaView className='flex-1 bg-white'>
       <GestureHandlerRootView style={{ flex: 1 }}>
+        {/* Header with Navigation and Search */}
+        <View className='flex-row justify-between items-center px-4 py-2'>
+          <TouchableOpacity
+            className='p-2'
+            onPress={() => {/* Add navigation handler here */}}
+          >
+            <Ionicons name="menu" size={24} color="#374151" />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            className='p-2'
+            onPress={() => {/* Add search handler here */}}
+          >
+            <Ionicons name="search" size={24} color="#374151" />
+          </TouchableOpacity>
+        </View>
+
         <ScrollView 
           className='flex-1'
-          contentContainerStyle={{ paddingTop: Platform.OS === 'android' ? 25 : 0 }}
+          contentContainerStyle={{ paddingTop: Platform.OS === 'android' ? 0 : 0 }}
         >
           {/* Header with Summary Card */}
           <View className='px-4'>
