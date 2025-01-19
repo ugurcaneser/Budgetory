@@ -9,6 +9,14 @@ import { fetchExchangeRates, convertAmount } from '../utils/currency';
 import { useCurrency } from '../context/CurrencyContext';
 import { incomeCategories, expenseCategories } from '../utils/categories';
 import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+
+type RootStackParamList = {
+  Home: undefined;
+  Transactions: { transactions: Transaction[] };
+};
+
+type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
 
 export default function HomeScreen() {
   const [totalIncome, setTotalIncome] = useState(0);
@@ -19,7 +27,7 @@ export default function HomeScreen() {
   const [transactionType, setTransactionType] = useState<'income' | 'expense'>('income');
   const [exchangeRates, setExchangeRates] = useState<{[key: string]: number}>({});
   const { selectedCurrency } = useCurrency();
-  const navigation = useNavigation();
+  const navigation = useNavigation<HomeScreenNavigationProp>();
 
   // Animation values
   const animation = useRef(new Animated.Value(0)).current;

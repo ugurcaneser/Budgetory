@@ -7,8 +7,15 @@ import { NavigationContainer } from '@react-navigation/native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import TransactionsScreen from './screens/TransactionsScreen';
 import { createStackNavigator } from '@react-navigation/stack';
+import { Transaction } from './utils/storage';  // Transaction tipini import edin
 
-const Stack = createStackNavigator();
+// Navigation için tip tanımlaması
+type RootStackParamList = {
+  Home: undefined;
+  Transactions: { transactions: Transaction[] };
+};
+
+const Stack = createStackNavigator<RootStackParamList>();
 
 export default function App() {
   return (
