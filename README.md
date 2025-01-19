@@ -26,7 +26,7 @@ Budgetory is a modern, user-friendly personal finance management application des
 1. Clone the repository
 ```bash
 git clone https://github.com/ugurcaneser/Budgetory.git
-cd budgetory
+cd Budgetory
 ```
 
 2. Install dependencies
