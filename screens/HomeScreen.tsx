@@ -171,9 +171,9 @@ export default function HomeScreen() {
   const incomeStyle = {
     transform: [
       {
-        translateY: animation.interpolate({
+        translateX: animation.interpolate({
           inputRange: [0, 1],
-          outputRange: [0, -120],
+          outputRange: [0, -80],
         }),
       },
     ],
@@ -183,9 +183,9 @@ export default function HomeScreen() {
   const expenseStyle = {
     transform: [
       {
-        translateY: animation.interpolate({
+        translateX: animation.interpolate({
           inputRange: [0, 1],
-          outputRange: [0, -60],
+          outputRange: [0, 80],
         }),
       },
     ],
