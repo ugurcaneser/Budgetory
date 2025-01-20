@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, SafeAreaView, Animated, Platform, Image, Alert, TextInput } from 'react-native';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { GestureHandlerRootView, DrawerLayout } from 'react-native-gesture-handler';
 import SummaryCard from '../components/SummaryCard';
 import { Ionicons } from '@expo/vector-icons';
 import TransactionModal from '../components/TransactionModal';
@@ -14,6 +14,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 type RootStackParamList = {
   Home: undefined;
   Transactions: { transactions: Transaction[] };
+  About: undefined;
 };
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
@@ -31,6 +32,7 @@ export default function HomeScreen() {
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredTransactions, setFilteredTransactions] = useState<Transaction[]>([]);
+  const drawerRef = useRef<DrawerLayout>(null);
 
   // Animation values
   const animation = useRef(new Animated.Value(0)).current;
@@ -221,202 +223,216 @@ export default function HomeScreen() {
     setFilteredTransactions(filtered);
   };
 
+  const renderDrawerContent = () => {
+    return (
+      <View className="flex-1 bg-white pt-12 px-4">
+        <TouchableOpacity 
+          className="flex-row items-center p-4"
+          onPress={() => {
+            drawerRef.current?.closeDrawer();
+            navigation.navigate('About');
+          }}
+        >
+          <Ionicons name="information-circle-outline" size={24} color="#374151" />
+          <Text className="ml-3 text-gray-800 text-lg">About</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
   return (
     <SafeAreaView className='flex-1 bg-white'>
       <GestureHandlerRootView style={{ flex: 1 }}>
-        {/* Replace the existing header section with this */}
-        <View className='px-4 py-2'>
-          {!isSearchVisible ? (
-            <View className='flex-row justify-between items-center'>
-              <TouchableOpacity
-                className='p-2'
-                onPress={() => {/* Add navigation handler here */}}
-              >
-                <Ionicons name="menu" size={24} color="#374151" />
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                className='p-2'
-                onPress={toggleSearch}
-              >
-                <Ionicons name="search" size={24} color="#374151" />
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <View className='flex-row items-center bg-gray-100 rounded-lg px-2'>
-              <TouchableOpacity
-                className='p-2'
-                onPress={toggleSearch}
-              >
-                <Ionicons name="arrow-back" size={24} color="#374151" />
-              </TouchableOpacity>
-              <TextInput
-                className='flex-1 py-2 px-3'
-                placeholder="Search transactions..."
-                value={searchQuery}
-                onChangeText={handleSearch}
-                autoFocus
-              />
-              {searchQuery.length > 0 && (
+        <DrawerLayout
+          ref={drawerRef}
+          drawerWidth={250}
+          drawerPosition="left"
+          renderNavigationView={renderDrawerContent}
+        >
+          <View className='px-4 py-2'>
+            {!isSearchVisible ? (
+              <View className='flex-row justify-between items-center'>
                 <TouchableOpacity
                   className='p-2'
-                  onPress={() => {
-                    setSearchQuery('');
-                    setFilteredTransactions([]);
-                  }}
+                  onPress={() => drawerRef.current?.openDrawer()}
                 >
-                  <Ionicons name="close" size={20} color="#374151" />
+                  <Ionicons name="menu" size={24} color="#374151" />
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  className='p-2'
+                  onPress={toggleSearch}
+                >
+                  <Ionicons name="search" size={24} color="#374151" />
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View className='flex-row items-center bg-gray-100 rounded-lg px-2'>
+                <TouchableOpacity
+                  className='p-2'
+                  onPress={toggleSearch}
+                >
+                  <Ionicons name="arrow-back" size={24} color="#374151" />
+                </TouchableOpacity>
+                <TextInput
+                  className='flex-1 py-2 px-3'
+                  placeholder="Search transactions..."
+                  value={searchQuery}
+                  onChangeText={handleSearch}
+                  autoFocus
+                />
+                {searchQuery.length > 0 && (
+                  <TouchableOpacity
+                    className='p-2'
+                    onPress={() => {
+                      setSearchQuery('');
+                      setFilteredTransactions([]);
+                    }}
+                  >
+                    <Ionicons name="close" size={20} color="#374151" />
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
+          </View>
+
+          <ScrollView 
+            className='flex-1'
+            contentContainerStyle={{ paddingTop: Platform.OS === 'android' ? 0 : 0 }}
+          >
+            {!isSearchVisible && (
+              <View className='px-4'>
+                <SummaryCard 
+                  totalIncome={totalIncome}
+                  totalExpense={totalExpense}
+                />
+              </View>
+            )}
+
+            <View className='px-6 mt-4 mb-32'>
+              <Text className='text-xl font-bold text-gray-800 mb-2'>
+                {searchQuery ? 'Search Results' : 'Recent Transactions'}
+              </Text>
+              {(searchQuery ? filteredTransactions : transactions.slice(0, 5)).map((transaction, index) => {
+                const category = getCategoryDetails(transaction);
+                return (
+                  <TouchableOpacity
+                    key={transaction.id}
+                    onLongPress={() => handleLongPress(transaction)}
+                    delayLongPress={300}
+                  >
+                    <View className='py-3'>
+                      <View className='flex-row justify-between items-center'>
+                        <View className='flex-row items-center flex-1 mr-3'>
+                          {category.image ? (
+                            <Image 
+                              source={category.image}
+                              className='w-8 h-8 mr-3'
+                              resizeMode='contain'
+                            />
+                          ) : (
+                            <View className="mr-3">
+                              <Ionicons 
+                                name={category.icon as any} 
+                                size={24} 
+                                color={transaction.type === 'income' ? '#22c55e' : '#ef4444'} 
+                              />
+                            </View>
+                          )}
+                          <View className='flex-1'>
+                            <View className='flex-row items-center'>
+                              <Text className='text-base font-medium text-gray-800'>{category.name}</Text>
+                              <Text className='text-sm text-gray-400 ml-2'>
+                                {new Date(transaction.date).toLocaleDateString('en-US', {
+                                  month: 'short',
+                                  day: 'numeric'
+                                })}
+                              </Text>
+                            </View>
+                            {transaction.description && (
+                              <Text className='text-sm text-gray-400' numberOfLines={1}>
+                                {transaction.description}
+                              </Text>
+                            )}
+                          </View>
+                        </View>
+                        <Text 
+                          className={`text-base font-medium ${
+                            transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
+                          }`}
+                        >
+                          {transaction.type === 'income' ? '+' : '-'} {formatAmount(transaction.amount, transaction.currency)}
+                        </Text>
+                      </View>
+                      {index < transactions.length - 1 && (
+                        <View className='h-[0.5px] bg-gray-100 mt-3' />
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+
+              {!searchQuery && transactions.length > 5 && (
+                <TouchableOpacity 
+                  className='mt-4 py-3 bg-gray-50 rounded-lg'
+                  onPress={() => navigation.navigate('Transactions', { transactions })}
+                >
+                  <Text className='text-center text-gray-600 font-medium'>
+                    Show More
+                  </Text>
                 </TouchableOpacity>
               )}
             </View>
-          )}
-        </View>
+          </ScrollView>
 
-        <ScrollView 
-          className='flex-1'
-          contentContainerStyle={{ paddingTop: Platform.OS === 'android' ? 0 : 0 }}
-        >
-          {/* Show Summary Card only when not searching */}
-          {!isSearchVisible && (
-            <View className='px-4'>
-              <SummaryCard 
-                totalIncome={totalIncome}
-                totalExpense={totalExpense}
-              />
-            </View>
+          {isExpanded && (
+            <TouchableOpacity
+              className="absolute inset-0"
+              onPress={toggleMenu}
+              activeOpacity={1}
+            />
           )}
 
-          {/* Transactions */}
-          <View className='px-6 mt-4 mb-32'>
-            <Text className='text-xl font-bold text-gray-800 mb-2'>
-              {searchQuery ? 'Search Results' : 'Recent Transactions'}
-            </Text>
-            {(searchQuery ? filteredTransactions : transactions.slice(0, 5)).map((transaction, index) => {
-              const category = getCategoryDetails(transaction);
-              return (
-                <TouchableOpacity
-                  key={transaction.id}
-                  onLongPress={() => handleLongPress(transaction)}
-                  delayLongPress={300}
-                >
-                  <View className='py-3'>
-                    <View className='flex-row justify-between items-center'>
-                      <View className='flex-row items-center flex-1 mr-3'>
-                        {category.image ? (
-                          <Image 
-                            source={category.image}
-                            className='w-8 h-8 mr-3'
-                            resizeMode='contain'
-                          />
-                        ) : (
-                          <View className="mr-3">
-                            <Ionicons 
-                              name={category.icon as any} 
-                              size={24} 
-                              color={transaction.type === 'income' ? '#22c55e' : '#ef4444'} 
-                            />
-                          </View>
-                        )}
-                        <View className='flex-1'>
-                          <View className='flex-row items-center'>
-                            <Text className='text-base font-medium text-gray-800'>{category.name}</Text>
-                            <Text className='text-sm text-gray-400 ml-2'>
-                              {new Date(transaction.date).toLocaleDateString('en-US', {
-                                month: 'short',
-                                day: 'numeric'
-                              })}
-                            </Text>
-                          </View>
-                          {transaction.description && (
-                            <Text className='text-sm text-gray-400' numberOfLines={1}>
-                              {transaction.description}
-                            </Text>
-                          )}
-                        </View>
-                      </View>
-                      <Text 
-                        className={`text-base font-medium ${
-                          transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
-                        }`}
-                      >
-                        {transaction.type === 'income' ? '+' : '-'} {formatAmount(transaction.amount, transaction.currency)}
-                      </Text>
-                    </View>
-                    {index < transactions.length - 1 && (
-                      <View className='h-[0.5px] bg-gray-100 mt-3' />
-                    )}
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
-
-            {/* Show More Button - only show when not searching and there are more than 5 transactions */}
-            {!searchQuery && transactions.length > 5 && (
+          <View className='absolute bottom-8 left-0 right-0 items-center'>
+            <Animated.View style={[incomeStyle]} className='absolute'>
               <TouchableOpacity 
-                className='mt-4 py-3 bg-gray-50 rounded-lg'
-                onPress={() => navigation.navigate('Transactions', { transactions })}
+                className='bg-green-500 w-14 h-14 rounded-full items-center justify-center shadow-lg'
+                onPress={() => openModal('income')}
               >
-                <Text className='text-center text-gray-600 font-medium'>
-                  Show More
-                </Text>
+                <Ionicons name="arrow-up" size={24} color="white" />
               </TouchableOpacity>
-            )}
+            </Animated.View>
+
+            <Animated.View style={[expenseStyle]} className='absolute'>
+              <TouchableOpacity 
+                className='bg-red-500 w-14 h-14 rounded-full items-center justify-center shadow-lg'
+                onPress={() => openModal('expense')}
+              >
+                <Ionicons name="arrow-down" size={24} color="white" />
+              </TouchableOpacity>
+            </Animated.View>
+
+            <TouchableOpacity 
+              className='w-16 h-16 items-center justify-center'
+              onPress={toggleMenu}
+            >
+              <View>
+                <Image 
+                  source={require('../assets/mainFAB.png')} 
+                  className='w-16 h-16'
+                  resizeMode='contain'
+                />
+              </View>
+            </TouchableOpacity>
           </View>
-        </ScrollView>
 
-        {/* Overlay for closing FAB menu */}
-        {isExpanded && (
-          <TouchableOpacity
-            className="absolute inset-0"
-            onPress={toggleMenu}
-            activeOpacity={1}
+          <TransactionModal
+            isVisible={modalVisible}
+            onClose={() => setModalVisible(false)}
+            onSubmit={handleAddTransaction}
+            type={transactionType}
           />
-        )}
-
-        {/* Floating Action Buttons */}
-        <View className='absolute bottom-8 left-0 right-0 items-center'>
-          {/* Income Button */}
-          <Animated.View style={[incomeStyle]} className='absolute'>
-            <TouchableOpacity 
-              className='bg-green-500 w-14 h-14 rounded-full items-center justify-center shadow-lg'
-              onPress={() => openModal('income')}
-            >
-              <Ionicons name="arrow-up" size={24} color="white" />
-            </TouchableOpacity>
-          </Animated.View>
-
-          {/* Expense Button */}
-          <Animated.View style={[expenseStyle]} className='absolute'>
-            <TouchableOpacity 
-              className='bg-red-500 w-14 h-14 rounded-full items-center justify-center shadow-lg'
-              onPress={() => openModal('expense')}
-            >
-              <Ionicons name="arrow-down" size={24} color="white" />
-            </TouchableOpacity>
-          </Animated.View>
-
-          {/* Main Action Button */}
-          <TouchableOpacity 
-            className='w-16 h-16 items-center justify-center'
-            onPress={toggleMenu}
-          >
-            <View>
-              <Image 
-                source={require('../assets/mainFAB.png')} 
-                className='w-16 h-16'
-                resizeMode='contain'
-              />
-            </View>
-          </TouchableOpacity>
-        </View>
-
-        {/* Transaction Modal */}
-        <TransactionModal
-          isVisible={modalVisible}
-          onClose={() => setModalVisible(false)}
-          onSubmit={handleAddTransaction}
-          type={transactionType}
-        />
+        </DrawerLayout>
       </GestureHandlerRootView>
     </SafeAreaView>
   );
