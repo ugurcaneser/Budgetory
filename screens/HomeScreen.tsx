@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, SafeAreaView, Animated, Platform, Image, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, SafeAreaView, Animated, Platform, Image, Alert, TextInput } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import SummaryCard from '../components/SummaryCard';
 import { Ionicons } from '@expo/vector-icons';
@@ -28,6 +28,9 @@ export default function HomeScreen() {
   const [exchangeRates, setExchangeRates] = useState<{[key: string]: number}>({});
   const { selectedCurrency } = useCurrency();
   const navigation = useNavigation<HomeScreenNavigationProp>();
+  const [isSearchVisible, setIsSearchVisible] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredTransactions, setFilteredTransactions] = useState<Transaction[]>([]);
 
   // Animation values
   const animation = useRef(new Animated.Value(0)).current;
@@ -192,44 +195,103 @@ export default function HomeScreen() {
     opacity: animation,
   };
 
+  const toggleSearch = () => {
+    setIsSearchVisible(!isSearchVisible);
+    if (isSearchVisible) {
+      setSearchQuery('');
+      setFilteredTransactions([]);
+    }
+  };
+
+  const handleSearch = (text: string) => {
+    setSearchQuery(text);
+    if (text.trim() === '') {
+      setFilteredTransactions([]);
+      return;
+    }
+
+    const searchText = text.toLowerCase();
+    const filtered = transactions.filter(transaction => {
+      const category = getCategoryDetails(transaction);
+      return (
+        category.name.toLowerCase().includes(searchText) ||
+        transaction.description?.toLowerCase().includes(searchText)
+      );
+    });
+    setFilteredTransactions(filtered);
+  };
+
   return (
     <SafeAreaView className='flex-1 bg-white'>
       <GestureHandlerRootView style={{ flex: 1 }}>
-        {/* Header with Navigation and Search */}
-        <View className='flex-row justify-between items-center px-4 py-2'>
-          <TouchableOpacity
-            className='p-2'
-            onPress={() => {/* Add navigation handler here */}}
-          >
-            <Ionicons name="menu" size={24} color="#374151" />
-          </TouchableOpacity>
+        {/* Replace the existing header section with this */}
+        <View className='px-4 py-2'>
+          {!isSearchVisible ? (
+            <View className='flex-row justify-between items-center'>
+              <TouchableOpacity
+                className='p-2'
+                onPress={() => {/* Add navigation handler here */}}
+              >
+                <Ionicons name="menu" size={24} color="#374151" />
+              </TouchableOpacity>
 
-          <TouchableOpacity
-            className='p-2'
-            onPress={() => {/* Add search handler here */}}
-          >
-            <Ionicons name="search" size={24} color="#374151" />
-          </TouchableOpacity>
+              <TouchableOpacity
+                className='p-2'
+                onPress={toggleSearch}
+              >
+                <Ionicons name="search" size={24} color="#374151" />
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View className='flex-row items-center bg-gray-100 rounded-lg px-2'>
+              <TouchableOpacity
+                className='p-2'
+                onPress={toggleSearch}
+              >
+                <Ionicons name="arrow-back" size={24} color="#374151" />
+              </TouchableOpacity>
+              <TextInput
+                className='flex-1 py-2 px-3'
+                placeholder="Search transactions..."
+                value={searchQuery}
+                onChangeText={handleSearch}
+                autoFocus
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity
+                  className='p-2'
+                  onPress={() => {
+                    setSearchQuery('');
+                    setFilteredTransactions([]);
+                  }}
+                >
+                  <Ionicons name="close" size={20} color="#374151" />
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
         </View>
 
         <ScrollView 
           className='flex-1'
           contentContainerStyle={{ paddingTop: Platform.OS === 'android' ? 0 : 0 }}
         >
-          {/* Header with Summary Card */}
-          <View className='px-4'>
-            <SummaryCard 
-              totalIncome={totalIncome}
-              totalExpense={totalExpense}
-            />
-          </View>
+          {/* Show Summary Card only when not searching */}
+          {!isSearchVisible && (
+            <View className='px-4'>
+              <SummaryCard 
+                totalIncome={totalIncome}
+                totalExpense={totalExpense}
+              />
+            </View>
+          )}
 
-          {/* Recent Transactions */}
+          {/* Transactions */}
           <View className='px-6 mt-4 mb-32'>
             <Text className='text-xl font-bold text-gray-800 mb-2'>
-              Recent Transactions
+              {searchQuery ? 'Search Results' : 'Recent Transactions'}
             </Text>
-            {transactions.slice(0, 5).map((transaction, index) => {
+            {(searchQuery ? filteredTransactions : transactions.slice(0, 5)).map((transaction, index) => {
               const category = getCategoryDetails(transaction);
               return (
                 <TouchableOpacity
@@ -288,8 +350,8 @@ export default function HomeScreen() {
               );
             })}
 
-            {/* Show More Button */}
-            {transactions.length > 5 && (
+            {/* Show More Button - only show when not searching and there are more than 5 transactions */}
+            {!searchQuery && transactions.length > 5 && (
               <TouchableOpacity 
                 className='mt-4 py-3 bg-gray-50 rounded-lg'
                 onPress={() => navigation.navigate('Transactions', { transactions })}
