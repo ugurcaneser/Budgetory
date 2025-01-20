@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, SafeAreaView, Image, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Transaction } from '../utils/storage';
 import { incomeCategories, expenseCategories } from '../utils/categories';
 import { useCurrency } from '../context/CurrencyContext';
 import { convertAmount } from '../utils/currency';
+import FilterModal from '../components/FilterModal';
 
 type TransactionsScreenProps = {
   route: { params: { transactions: Transaction[] } };
@@ -14,6 +15,44 @@ type TransactionsScreenProps = {
 export default function TransactionsScreen({ route, navigation }: TransactionsScreenProps) {
   const { transactions } = route.params;
   const { selectedCurrency } = useCurrency();
+  const [filteredTransactions, setFilteredTransactions] = useState<Transaction[]>(transactions);
+  const [filterModalVisible, setFilterModalVisible] = useState(false);
+  const [filters, setFilters] = useState({
+    startDate: null as Date | null,
+    endDate: null as Date | null,
+    category: '',
+    searchText: ''
+  });
+
+  const applyFilters = useCallback(() => {
+    let result = [...transactions];
+
+    // Date filtering
+    if (filters.startDate) {
+      result = result.filter(t => new Date(t.date) >= filters.startDate!);
+    }
+    if (filters.endDate) {
+      result = result.filter(t => new Date(t.date) <= filters.endDate!);
+    }
+
+    // Category filtering
+    if (filters.category) {
+      result = result.filter(t => getCategoryDetails(t).id === filters.category);
+    }
+
+    // Description filtering
+    if (filters.searchText) {
+      result = result.filter(t => 
+        t.description?.toLowerCase().includes(filters.searchText.toLowerCase())
+      );
+    }
+
+    setFilteredTransactions(result);
+  }, [filters, transactions]);
+
+  const handleFilter = () => {
+    setFilterModalVisible(true);
+  };
 
   const getCategoryDetails = (transaction: Transaction) => {
     const categories = transaction.type === 'income' ? incomeCategories : expenseCategories;
@@ -41,7 +80,7 @@ export default function TransactionsScreen({ route, navigation }: TransactionsSc
         </View>
         <TouchableOpacity
           className='p-2'
-          onPress={() => Alert.alert('Filter', 'Filter functionality will be added soon')}
+          onPress={handleFilter}
         >
           <Ionicons name="filter" size={24} color="#374151" />
         </TouchableOpacity>
@@ -49,7 +88,7 @@ export default function TransactionsScreen({ route, navigation }: TransactionsSc
 
       <ScrollView className='flex-1'>
         <View className='px-6'>
-          {transactions.map((transaction, index) => {
+          {filteredTransactions.map((transaction, index) => {
             const category = getCategoryDetails(transaction);
             return (
               <View key={transaction.id} className='py-3'>
@@ -95,7 +134,7 @@ export default function TransactionsScreen({ route, navigation }: TransactionsSc
                     {transaction.type === 'income' ? '+' : '-'} {formatAmount(transaction.amount, transaction.currency)}
                   </Text>
                 </View>
-                {index < transactions.length - 1 && (
+                {index < filteredTransactions.length - 1 && (
                   <View className='h-[0.5px] bg-gray-100 mt-3' />
                 )}
               </View>
@@ -103,6 +142,14 @@ export default function TransactionsScreen({ route, navigation }: TransactionsSc
           })}
         </View>
       </ScrollView>
+
+      <FilterModal
+        visible={filterModalVisible}
+        onClose={() => setFilterModalVisible(false)}
+        filters={filters}
+        setFilters={setFilters}
+        onApply={applyFilters}
+      />
     </SafeAreaView>
   );
 } 
