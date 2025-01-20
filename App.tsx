@@ -9,6 +9,9 @@ import TransactionsScreen from './screens/TransactionsScreen';
 import { createStackNavigator } from '@react-navigation/stack';
 import { Transaction } from './utils/storage';  // Transaction tipini import edin
 import AboutScreen from './screens/AboutScreen';
+import { enableScreens } from 'react-native-screens';
+
+enableScreens();
 
 // Navigation için tip tanımlaması
 type RootStackParamList = {
