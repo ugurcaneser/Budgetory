@@ -2,12 +2,23 @@ import React, { useState } from 'react';
 import { View, Text, Modal, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { incomeCategories, expenseCategories, Category } from '../utils/categories';
+import { useCurrency } from '../context/CurrencyContext';
+
+interface CustomCategory {
+  id: string;
+  name: string;
+  icon: string;
+  image?: any;
+}
 
 interface TransactionModalProps {
   isVisible: boolean;
   onClose: () => void;
   onSubmit: (amount: number, description: string, currency: string, categoryId: string) => void;
   type: 'income' | 'expense';
+  customCategories: CustomCategory[];
+  onAddCustomCategory: (categoryName: string) => void;
+  onAddCategoryPress: () => void;
 }
 
 const currencies = [
@@ -17,14 +28,26 @@ const currencies = [
   { code: 'TRY', symbol: '₺' },
 ];
 
-export default function TransactionModal({ isVisible, onClose, onSubmit, type }: TransactionModalProps) {
+export default function TransactionModal({ 
+  isVisible, 
+  onClose, 
+  onSubmit, 
+  type,
+  customCategories,
+  onAddCustomCategory,
+  onAddCategoryPress
+}: TransactionModalProps) {
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [selectedCurrency, setSelectedCurrency] = useState(currencies[0]);
   const [showCurrencyModal, setShowCurrencyModal] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [showNewCategoryInput, setShowNewCategoryInput] = useState(false);
+  const { selectedCurrency: contextCurrency } = useCurrency();
 
   const categories = type === 'income' ? incomeCategories : expenseCategories;
+  const allCategories = [...categories, ...customCategories];
 
   const handleSubmit = () => {
     if (!amount || !selectedCategory) return;
@@ -39,14 +62,22 @@ export default function TransactionModal({ isVisible, onClose, onSubmit, type }:
       numAmount,
       description,
       selectedCurrency.code,
-      selectedCategory.id
+      selectedCategory
     );
 
     // Reset form
     setAmount('');
     setDescription('');
-    setSelectedCategory(null);
+    setSelectedCategory('');
     onClose();
+  };
+
+  const handleAddCustomCategory = () => {
+    if (newCategoryName.trim()) {
+      onAddCustomCategory(newCategoryName.trim());
+      setShowNewCategoryInput(false);
+      setNewCategoryName('');
+    }
   };
 
   return (
@@ -78,12 +109,12 @@ export default function TransactionModal({ isVisible, onClose, onSubmit, type }:
             showsHorizontalScrollIndicator={false}
             className="mb-4"
           >
-            {categories.map((category) => (
+            {allCategories.map((category) => (
               <TouchableOpacity
                 key={category.id}
-                onPress={() => setSelectedCategory(category)}
+                onPress={() => setSelectedCategory(category.id)}
                 className={`mr-4 items-center justify-center p-2 rounded-xl ${
-                  selectedCategory?.id === category.id 
+                  selectedCategory === category.id 
                     ? type === 'income' ? 'bg-green-100' : 'bg-red-100'
                     : 'bg-gray-50'
                 }`}
@@ -99,7 +130,7 @@ export default function TransactionModal({ isVisible, onClose, onSubmit, type }:
                     <Ionicons 
                       name={category.icon as any} 
                       size={24} 
-                      color={selectedCategory?.id === category.id 
+                      color={selectedCategory === category.id 
                         ? type === 'income' ? '#22c55e' : '#ef4444'
                         : '#666'} 
                     />
@@ -108,6 +139,19 @@ export default function TransactionModal({ isVisible, onClose, onSubmit, type }:
                 <Text className="text-sm text-center">{category.name}</Text>
               </TouchableOpacity>
             ))}
+            <TouchableOpacity
+              onPress={() => setShowNewCategoryInput(true)}
+              className={`mr-4 items-center justify-center p-2 rounded-xl bg-gray-50`}
+            >
+              <View className="w-10 h-10 mb-1 items-center justify-center">
+                <Ionicons 
+                  name="add-circle-outline"
+                  size={24}
+                  color={type === 'income' ? '#22c55e' : '#ef4444'}
+                />
+              </View>
+              <Text className="text-sm text-center">Add New</Text>
+            </TouchableOpacity>
           </ScrollView>
 
           {/* Amount Input */}
@@ -200,6 +244,47 @@ export default function TransactionModal({ isVisible, onClose, onSubmit, type }:
             >
               <Text className="text-lg text-red-500">Cancel</Text>
             </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* New Category Modal */}
+      <Modal
+        visible={showNewCategoryInput}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowNewCategoryInput(false)}
+      >
+        <View className="flex-1 justify-end">
+          <View className="bg-white rounded-t-3xl">
+            <View className="p-4 border-b border-gray-200">
+              <Text className="text-xl font-bold">Add New Category</Text>
+            </View>
+            <View className="p-4">
+              <TextInput
+                className="p-4 bg-gray-50 rounded-xl mb-4"
+                placeholder="Enter category name"
+                value={newCategoryName}
+                onChangeText={setNewCategoryName}
+                placeholderTextColor="#666"
+              />
+              <TouchableOpacity
+                onPress={handleAddCustomCategory}
+                className={`p-4 rounded-xl mb-2 ${type === 'income' ? 'bg-green-500' : 'bg-red-500'}`}
+                disabled={!newCategoryName.trim()}
+              >
+                <Text className="text-white text-lg font-semibold text-center">Add Category</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowNewCategoryInput(false);
+                  setNewCategoryName('');
+                }}
+                className="p-4"
+              >
+                <Text className="text-lg text-red-500 text-center">Cancel</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>

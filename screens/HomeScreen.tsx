@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, SafeAreaView, Animated, Platform, Image, Alert, TextInput } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, SafeAreaView, Animated, Platform, Image, Alert, TextInput, Modal } from 'react-native';
 import { GestureHandlerRootView, DrawerLayout } from 'react-native-gesture-handler';
 import SummaryCard from '../components/SummaryCard';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,6 +10,7 @@ import { useCurrency } from '../context/CurrencyContext';
 import { incomeCategories, expenseCategories } from '../utils/categories';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
+import { Category } from '../types';
 
 type RootStackParamList = {
   Home: undefined;
@@ -36,6 +37,12 @@ export default function HomeScreen() {
 
   // Animation values
   const animation = useRef(new Animated.Value(0)).current;
+
+  // Add new state for custom categories
+  const [customIncomeCategories, setCustomIncomeCategories] = useState<typeof incomeCategories>([]);
+  const [customExpenseCategories, setCustomExpenseCategories] = useState<typeof expenseCategories>([]);
+  const [isAddCategoryModalVisible, setIsAddCategoryModalVisible] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
 
   // Load saved data and exchange rates when component mounts or currency changes
   useEffect(() => {
@@ -163,8 +170,10 @@ export default function HomeScreen() {
   };
 
   const getCategoryDetails = (transaction: Transaction) => {
-    const categories = transaction.type === 'income' ? incomeCategories : expenseCategories;
-    return categories.find(cat => cat.id === transaction.categoryId) || categories[0];
+    const defaultCategories = transaction.type === 'income' ? incomeCategories : expenseCategories;
+    const customCategories = transaction.type === 'income' ? customIncomeCategories : customExpenseCategories;
+    const allCategories = [...defaultCategories, ...customCategories];
+    return allCategories.find(cat => cat.id === transaction.categoryId) || defaultCategories[0];
   };
 
   const openModal = (type: 'income' | 'expense') => {
@@ -238,6 +247,35 @@ export default function HomeScreen() {
         </TouchableOpacity>
       </View>
     );
+  };
+
+  // Add function to handle adding custom categories
+  const handleAddCustomCategory = (type: 'income' | 'expense', categoryName: string) => {
+    const newCategory: Category = {
+      id: `custom-${Date.now()}`,
+      name: categoryName,
+      type: type,
+      image: null,
+      icon: 'add-circle-outline',
+    };
+
+    if (type === 'income') {
+      setCustomIncomeCategories(prev => [...prev, newCategory]);
+    } else {
+      setCustomExpenseCategories(prev => [...prev, newCategory]);
+    }
+  };
+
+  const handleAddCategoryPress = () => {
+    setIsAddCategoryModalVisible(true);
+  };
+
+  const handleAddCategory = () => {
+    if (newCategoryName.trim()) {
+      handleAddCustomCategory(transactionType, newCategoryName.trim());
+      setNewCategoryName('');
+      setIsAddCategoryModalVisible(false);
+    }
   };
 
   return (
@@ -431,7 +469,46 @@ export default function HomeScreen() {
             onClose={() => setModalVisible(false)}
             onSubmit={handleAddTransaction}
             type={transactionType}
+            customCategories={transactionType === 'income' ? customIncomeCategories : customExpenseCategories}
+            onAddCustomCategory={(categoryName) => handleAddCustomCategory(transactionType, categoryName)}
+            onAddCategoryPress={handleAddCategoryPress}
           />
+
+          <Modal
+            animationType="slide"
+            transparent={true}
+            visible={isAddCategoryModalVisible}
+            onRequestClose={() => setIsAddCategoryModalVisible(false)}
+          >
+            <View className="flex-1 justify-center items-center bg-black/50">
+              <View className="bg-white p-6 rounded-lg w-4/5">
+                <Text className="text-lg font-semibold mb-4">Add New Category</Text>
+                <TextInput
+                  className="border border-gray-300 rounded-lg p-2 mb-4"
+                  placeholder="Category Name"
+                  value={newCategoryName}
+                  onChangeText={setNewCategoryName}
+                />
+                <View className="flex-row justify-end">
+                  <TouchableOpacity
+                    className="px-4 py-2 mr-2"
+                    onPress={() => {
+                      setNewCategoryName('');
+                      setIsAddCategoryModalVisible(false);
+                    }}
+                  >
+                    <Text className="text-gray-600">Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    className="bg-blue-500 px-4 py-2 rounded-lg"
+                    onPress={handleAddCategory}
+                  >
+                    <Text className="text-white">Add</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </Modal>
         </DrawerLayout>
       </GestureHandlerRootView>
     </SafeAreaView>
