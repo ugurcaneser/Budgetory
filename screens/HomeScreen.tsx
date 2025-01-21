@@ -250,19 +250,11 @@ export default function HomeScreen() {
   };
 
   // Add function to handle adding custom categories
-  const handleAddCustomCategory = (type: 'income' | 'expense', categoryName: string) => {
-    const newCategory: Category = {
-      id: `custom-${Date.now()}`,
-      name: categoryName,
-      type: type,
-      image: null,
-      icon: 'add-circle-outline',
-    };
-
+  const handleAddCustomCategory = (type: 'income' | 'expense', category: Category) => {
     if (type === 'income') {
-      setCustomIncomeCategories(prev => [...prev, newCategory]);
+      setCustomIncomeCategories(prev => [...prev, category]);
     } else {
-      setCustomExpenseCategories(prev => [...prev, newCategory]);
+      setCustomExpenseCategories(prev => [...prev, category]);
     }
   };
 
@@ -272,7 +264,14 @@ export default function HomeScreen() {
 
   const handleAddCategory = () => {
     if (newCategoryName.trim()) {
-      handleAddCustomCategory(transactionType, newCategoryName.trim());
+      const newCategory: Category = {
+        id: `custom-${Date.now()}`,
+        name: newCategoryName.trim(),
+        type: transactionType as 'income' | 'expense',
+        image: null,
+        icon: transactionType === 'income' ? 'add-circle-outline' : 'remove-circle-outline',
+      };
+      handleAddCustomCategory(transactionType as 'income' | 'expense', newCategory);
       setNewCategoryName('');
       setIsAddCategoryModalVisible(false);
     }
@@ -470,7 +469,7 @@ export default function HomeScreen() {
             onSubmit={handleAddTransaction}
             type={transactionType}
             customCategories={transactionType === 'income' ? customIncomeCategories : customExpenseCategories}
-            onAddCustomCategory={(categoryName) => handleAddCustomCategory(transactionType, categoryName)}
+            onAddCustomCategory={(category: Category) => handleAddCustomCategory(transactionType as 'income' | 'expense', category)}
             onAddCategoryPress={handleAddCategoryPress}
           />
 

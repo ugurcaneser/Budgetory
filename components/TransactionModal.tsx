@@ -17,7 +17,7 @@ interface TransactionModalProps {
   onSubmit: (amount: number, description: string, currency: string, categoryId: string) => void;
   type: 'income' | 'expense';
   customCategories: CustomCategory[];
-  onAddCustomCategory: (categoryName: string) => void;
+  onAddCustomCategory: (category: Category) => void;
   onAddCategoryPress: () => void;
 }
 
@@ -72,12 +72,15 @@ export default function TransactionModal({
     onClose();
   };
 
-  const handleAddCustomCategory = () => {
-    if (newCategoryName.trim()) {
-      onAddCustomCategory(newCategoryName.trim());
-      setShowNewCategoryInput(false);
-      setNewCategoryName('');
-    }
+  const handleAddCustomCategory = (categoryName: string) => {
+    const newCategory: Category = {
+      id: `custom-${Date.now()}`,
+      name: categoryName,
+      type: type,
+      image: null,
+      icon: type === 'income' ? 'add-circle' : 'remove-circle'
+    };
+    onAddCustomCategory(newCategory);
   };
 
   return (
@@ -269,7 +272,7 @@ export default function TransactionModal({
                 placeholderTextColor="#666"
               />
               <TouchableOpacity
-                onPress={handleAddCustomCategory}
+                onPress={() => handleAddCustomCategory(newCategoryName)}
                 className={`p-4 rounded-xl mb-2 ${type === 'income' ? 'bg-green-500' : 'bg-red-500'}`}
                 disabled={!newCategoryName.trim()}
               >
