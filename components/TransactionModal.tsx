@@ -5,21 +5,11 @@ import { incomeCategories, expenseCategories, Category } from '../utils/categori
 import { useCurrency } from '../context/CurrencyContext';
 import { currencies } from '../context/CurrencyContext';
 
-interface CustomCategory {
-  id: string;
-  name: string;
-  icon: string;
-  image?: any;
-}
-
 interface TransactionModalProps {
   isVisible: boolean;
   onClose: () => void;
   onSubmit: (amount: number, description: string, currency: string, categoryId: string) => void;
   type: 'income' | 'expense';
-  customCategories: CustomCategory[];
-  onAddCustomCategory: (category: Category) => void;
-  onAddCategoryPress: () => void;
 }
 
 export default function TransactionModal({ 
@@ -27,25 +17,18 @@ export default function TransactionModal({
   onClose, 
   onSubmit, 
   type,
-  customCategories,
-  onAddCustomCategory,
-  onAddCategoryPress
 }: TransactionModalProps) {
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [showCurrencyModal, setShowCurrencyModal] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('');
-  const [newCategoryName, setNewCategoryName] = useState('');
-  const [showNewCategoryInput, setShowNewCategoryInput] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const { selectedCurrency, setSelectedCurrency } = useCurrency();
 
   const categories = type === 'income' ? incomeCategories : expenseCategories;
-  const allCategories = [...categories, ...customCategories];
 
   const handleSubmit = () => {
     if (!amount || !selectedCategory) {
-      // Show error or alert
       return;
     }
 
@@ -60,24 +43,6 @@ export default function TransactionModal({
     setAmount('');
     setDescription('');
     setSelectedCategory('');
-    setNewCategoryName('');
-    setShowNewCategoryInput(false);
-  };
-
-  const handleAddCategory = () => {
-    if (newCategoryName.trim()) {
-      const newCategory: Category = {
-        id: Date.now().toString(),
-        name: newCategoryName.trim(),
-        icon: 'add-circle-outline',
-        type: type,
-        image: null
-      };
-      onAddCustomCategory(newCategory);
-      setSelectedCategory(newCategory.id);
-      setNewCategoryName('');
-      setShowNewCategoryInput(false);
-    }
   };
 
   // Filter currencies based on search query
@@ -145,15 +110,10 @@ export default function TransactionModal({
 
             {/* Categories */}
             <View className="px-4 mb-4">
-              <View className="flex-row justify-between items-center mb-2">
-                <Text className="text-gray-600">Category</Text>
-                <TouchableOpacity onPress={onAddCategoryPress}>
-                  <Text className="text-blue-500">Add New</Text>
-                </TouchableOpacity>
-              </View>
+              <Text className="text-gray-600 mb-2">Category</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 <View className="flex-row">
-                  {allCategories.map((category) => (
+                  {categories.map((category) => (
                     <TouchableOpacity
                       key={category.id}
                       onPress={() => setSelectedCategory(category.id)}
