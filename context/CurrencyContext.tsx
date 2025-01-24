@@ -1,10 +1,21 @@
 import React, { createContext, useContext, useState } from 'react';
 
 export const currencies = [
-  { code: 'USD', symbol: '$' },
-  { code: 'EUR', symbol: '€' },
-  { code: 'GBP', symbol: '£' },
-  { code: 'TRY', symbol: '₺' },
+  { code: 'USD', symbol: '$', name: 'US Dollar' },
+  { code: 'EUR', symbol: '€', name: 'Euro' },
+  { code: 'GBP', symbol: '£', name: 'British Pound' },
+  { code: 'TRY', symbol: '₺', name: 'Turkish Lira' },
+  { code: 'JPY', symbol: '¥', name: 'Japanese Yen' },
+  { code: 'CNY', symbol: '¥', name: 'Chinese Yuan' },
+  { code: 'AUD', symbol: 'A$', name: 'Australian Dollar' },
+  { code: 'CAD', symbol: 'C$', name: 'Canadian Dollar' },
+  { code: 'CHF', symbol: 'Fr', name: 'Swiss Franc' },
+  { code: 'INR', symbol: '₹', name: 'Indian Rupee' },
+  { code: 'KRW', symbol: '₩', name: 'South Korean Won' },
+  { code: 'RUB', symbol: '₽', name: 'Russian Ruble' },
+  { code: 'BRL', symbol: 'R$', name: 'Brazilian Real' },
+  { code: 'NZD', symbol: 'NZ$', name: 'New Zealand Dollar' },
+  { code: 'SGD', symbol: 'S$', name: 'Singapore Dollar' },
 ];
 
 type Currency = typeof currencies[0];

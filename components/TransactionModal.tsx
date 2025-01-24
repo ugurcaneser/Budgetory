@@ -3,6 +3,7 @@ import { View, Text, Modal, TextInput, TouchableOpacity, KeyboardAvoidingView, P
 import { Ionicons } from '@expo/vector-icons';
 import { incomeCategories, expenseCategories, Category } from '../utils/categories';
 import { useCurrency } from '../context/CurrencyContext';
+import { currencies } from '../context/CurrencyContext';
 
 interface CustomCategory {
   id: string;
@@ -21,13 +22,6 @@ interface TransactionModalProps {
   onAddCategoryPress: () => void;
 }
 
-const currencies = [
-  { code: 'USD', symbol: '$' },
-  { code: 'EUR', symbol: '€' },
-  { code: 'GBP', symbol: '£' },
-  { code: 'TRY', symbol: '₺' },
-];
-
 export default function TransactionModal({ 
   isVisible, 
   onClose, 
@@ -39,27 +33,24 @@ export default function TransactionModal({
 }: TransactionModalProps) {
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
-  const [selectedCurrency, setSelectedCurrency] = useState(currencies[0]);
   const [showCurrencyModal, setShowCurrencyModal] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [newCategoryName, setNewCategoryName] = useState('');
   const [showNewCategoryInput, setShowNewCategoryInput] = useState(false);
-  const { selectedCurrency: contextCurrency } = useCurrency();
+  const [searchQuery, setSearchQuery] = useState('');
+  const { selectedCurrency, setSelectedCurrency } = useCurrency();
 
   const categories = type === 'income' ? incomeCategories : expenseCategories;
   const allCategories = [...categories, ...customCategories];
 
   const handleSubmit = () => {
-    if (!amount || !selectedCategory) return;
-
-    const numAmount = parseFloat(amount);
-    if (isNaN(numAmount) || numAmount <= 0) {
-      // TODO: Add error handling
+    if (!amount || !selectedCategory) {
+      // Show error or alert
       return;
     }
 
     onSubmit(
-      numAmount,
+      parseFloat(amount),
       description,
       selectedCurrency.code,
       selectedCategory
@@ -69,149 +60,127 @@ export default function TransactionModal({
     setAmount('');
     setDescription('');
     setSelectedCategory('');
-    onClose();
+    setNewCategoryName('');
+    setShowNewCategoryInput(false);
   };
 
-  const handleAddCustomCategory = (categoryName: string) => {
-    const newCategory: Category = {
-      id: `custom-${Date.now()}`,
-      name: categoryName,
-      type: type,
-      image: null,
-      icon: type === 'income' ? 'add-circle' : 'remove-circle'
-    };
-    onAddCustomCategory(newCategory);
+  const handleAddCategory = () => {
+    if (newCategoryName.trim()) {
+      const newCategory: Category = {
+        id: Date.now().toString(),
+        name: newCategoryName.trim(),
+        icon: 'add-circle-outline',
+        type: type,
+        image: null
+      };
+      onAddCustomCategory(newCategory);
+      setSelectedCategory(newCategory.id);
+      setNewCategoryName('');
+      setShowNewCategoryInput(false);
+    }
   };
+
+  // Filter currencies based on search query
+  const filteredCurrencies = currencies.filter(currency => 
+    currency.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    currency.code.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <Modal
       visible={isVisible}
-      transparent={true}
       animationType="slide"
+      transparent={true}
       onRequestClose={onClose}
     >
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1 justify-end"
       >
-        <View className="bg-white rounded-t-3xl p-6">
-          {/* Header */}
-          <View className="flex-row justify-between items-center mb-6">
-            <Text className="text-2xl font-bold text-gray-800">
-              Add {type === 'income' ? 'Income' : 'Expense'}
-            </Text>
+        <View className="bg-white rounded-t-3xl">
+          <View className="p-4 border-b border-gray-200 flex-row justify-between items-center">
             <TouchableOpacity onPress={onClose}>
-              <Ionicons name="close" size={24} color="#666" />
+              <Text className="text-red-500 text-lg">Cancel</Text>
+            </TouchableOpacity>
+            <Text className="text-xl font-semibold">
+              {type === 'income' ? 'Add Income' : 'Add Expense'}
+            </Text>
+            <TouchableOpacity onPress={handleSubmit}>
+              <Text className="text-blue-500 text-lg">Add</Text>
             </TouchableOpacity>
           </View>
 
-          {/* Categories */}
-          <Text className="text-gray-600 mb-2">Category</Text>
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false}
-            className="mb-4"
-          >
-            {allCategories.map((category) => (
-              <TouchableOpacity
-                key={category.id}
-                onPress={() => setSelectedCategory(category.id)}
-                className={`mr-4 items-center justify-center p-2 rounded-xl ${
-                  selectedCategory === category.id 
-                    ? type === 'income' ? 'bg-green-100' : 'bg-red-100'
-                    : 'bg-gray-50'
-                }`}
-              >
-                {category.image ? (
-                  <Image 
-                    source={category.image}
-                    className="w-10 h-10 mb-1"
-                    resizeMode="contain"
-                  />
-                ) : (
-                  <View className="w-10 h-10 mb-1 items-center justify-center">
-                    <Ionicons 
-                      name={category.icon as any} 
-                      size={24} 
-                      color={selectedCategory === category.id 
-                        ? type === 'income' ? '#22c55e' : '#ef4444'
-                        : '#666'} 
-                    />
-                  </View>
-                )}
-                <Text className="text-sm text-center">{category.name}</Text>
-              </TouchableOpacity>
-            ))}
-            <TouchableOpacity
-              onPress={() => setShowNewCategoryInput(true)}
-              className={`mr-4 items-center justify-center p-2 rounded-xl bg-gray-50`}
-            >
-              <View className="w-10 h-10 mb-1 items-center justify-center">
-                <Ionicons 
-                  name="add-circle-outline"
-                  size={24}
-                  color={type === 'income' ? '#22c55e' : '#ef4444'}
+          <ScrollView className="max-h-[600px]">
+            {/* Amount Input */}
+            <View className="p-4">
+              <Text className="text-gray-600 mb-2">Amount</Text>
+              <View className="flex-row items-center">
+                <TouchableOpacity
+                  onPress={() => setShowCurrencyModal(true)}
+                  className="bg-gray-100 px-3 py-2 rounded-l-lg flex-row items-center"
+                >
+                  <Text className="text-lg mr-1">{selectedCurrency.symbol}</Text>
+                  <Ionicons name="chevron-down" size={16} color="#666" />
+                </TouchableOpacity>
+                <TextInput
+                  className="flex-1 bg-gray-100 px-3 py-2 rounded-r-lg text-lg"
+                  keyboardType="decimal-pad"
+                  value={amount}
+                  onChangeText={setAmount}
+                  placeholder="0.00"
                 />
               </View>
-              <Text className="text-sm text-center">Add New</Text>
-            </TouchableOpacity>
-          </ScrollView>
+            </View>
 
-          {/* Amount Input */}
-          <View className="mb-4">
-            <Text className="text-gray-600 mb-2">Amount</Text>
-            <View className="flex-row items-center">
-              <TouchableOpacity 
-                onPress={() => setShowCurrencyModal(true)}
-                className="flex-row items-center bg-gray-100 px-3 py-2 rounded-xl mr-2"
-              >
-                <Text className="text-lg mr-1">{selectedCurrency.symbol}</Text>
-                <Ionicons name="chevron-down" size={16} color="#666" />
-              </TouchableOpacity>
+            {/* Description Input */}
+            <View className="px-4 mb-4">
+              <Text className="text-gray-600 mb-2">Description (Optional)</Text>
               <TextInput
-                className="flex-1 h-12 px-4 bg-gray-100 rounded-xl"
-                keyboardType="numeric"
-                placeholder="0.00"
-                value={amount}
-                onChangeText={(text) => {
-                  // Only allow numbers and a single decimal point
-                  const numericText = text.replace(/[^0-9.]/g, '');
-                  // Prevent multiple decimal points
-                  const parts = numericText.split('.');
-                  if (parts.length > 2) return;
-                  setAmount(numericText);
-                }}
+                className="bg-gray-100 px-3 py-2 rounded-lg"
+                value={description}
+                onChangeText={setDescription}
+                placeholder="Add a note"
               />
             </View>
-          </View>
 
-          {/* Description Input */}
-          <View className="mb-6">
-            <Text className="text-gray-600 mb-2">Description</Text>
-            <TextInput
-              className="h-12 px-4 bg-gray-100 rounded-xl"
-              placeholder="Enter description"
-              value={description}
-              onChangeText={setDescription}
-            />
-          </View>
-
-          {/* Submit Button */}
-          <TouchableOpacity
-            className={`py-4 rounded-xl ${
-              !selectedCategory || !amount
-                ? 'bg-gray-300'
-                : type === 'income' 
-                  ? 'bg-green-500' 
-                  : 'bg-red-500'
-            }`}
-            onPress={handleSubmit}
-            disabled={!selectedCategory || !amount}
-          >
-            <Text className="text-white text-lg font-semibold text-center">
-              Add {type === 'income' ? 'Income' : 'Expense'}
-            </Text>
-          </TouchableOpacity>
+            {/* Categories */}
+            <View className="px-4 mb-4">
+              <View className="flex-row justify-between items-center mb-2">
+                <Text className="text-gray-600">Category</Text>
+                <TouchableOpacity onPress={onAddCategoryPress}>
+                  <Text className="text-blue-500">Add New</Text>
+                </TouchableOpacity>
+              </View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                <View className="flex-row">
+                  {allCategories.map((category) => (
+                    <TouchableOpacity
+                      key={category.id}
+                      onPress={() => setSelectedCategory(category.id)}
+                      className={`items-center mr-4 p-2 rounded-lg ${
+                        selectedCategory === category.id ? 'bg-blue-100' : ''
+                      }`}
+                    >
+                      {category.image ? (
+                        <Image source={category.image} className="w-8 h-8" />
+                      ) : (
+                        <Ionicons 
+                          name={category.icon as any} 
+                          size={24} 
+                          color={selectedCategory === category.id ? '#2196F3' : '#666'} 
+                        />
+                      )}
+                      <Text className={`text-sm mt-1 ${
+                        selectedCategory === category.id ? 'text-blue-500' : 'text-gray-600'
+                      }`}>
+                        {category.name}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </ScrollView>
+            </View>
+          </ScrollView>
         </View>
       </KeyboardAvoidingView>
 
@@ -220,74 +189,66 @@ export default function TransactionModal({
         visible={showCurrencyModal}
         transparent={true}
         animationType="slide"
-        onRequestClose={() => setShowCurrencyModal(false)}
+        onRequestClose={() => {
+          setShowCurrencyModal(false);
+          setSearchQuery('');
+        }}
       >
-        <View className="flex-1 justify-end">
-          <View className="bg-white rounded-t-3xl">
-            <View className="p-4 border-b border-gray-200">
-              <Text className="text-xl font-bold">Select Currency</Text>
+        <View className='flex-1 justify-end'>
+          <View className='bg-white rounded-t-3xl max-h-[70%]'>
+            <View className='p-4 border-b border-gray-200'>
+              <Text className='text-xl font-bold text-center mb-2'>Select Currency</Text>
+              <View className='flex-row items-center bg-gray-100 rounded-lg px-3 py-2'>
+                <Ionicons name="search" size={20} color="#666" />
+                <TextInput
+                  className='flex-1 ml-2 text-base'
+                  placeholder="Search currency..."
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  autoCapitalize="none"
+                />
+                {searchQuery.length > 0 && (
+                  <TouchableOpacity onPress={() => setSearchQuery('')}>
+                    <Ionicons name="close-circle" size={20} color="#666" />
+                  </TouchableOpacity>
+                )}
+              </View>
             </View>
-            {currencies.map((currency) => (
-              <TouchableOpacity
-                key={currency.code}
-                className="p-4 border-b border-gray-100"
-                onPress={() => {
-                  setSelectedCurrency(currency);
-                  setShowCurrencyModal(false);
-                }}
-              >
-                <Text className="text-lg">
-                  {currency.code} ({currency.symbol})
-                </Text>
-              </TouchableOpacity>
-            ))}
+            <ScrollView className='max-h-[500px]'>
+              {filteredCurrencies.map((currency) => (
+                <TouchableOpacity
+                  key={currency.code}
+                  className={`p-4 border-b border-gray-100 flex-row justify-between items-center ${
+                    selectedCurrency.code === currency.code ? 'bg-blue-50' : ''
+                  }`}
+                  onPress={() => {
+                    setSelectedCurrency(currency);
+                    setShowCurrencyModal(false);
+                    setSearchQuery('');
+                  }}
+                >
+                  <View className='flex-row items-center'>
+                    <Text className='text-lg'>{currency.symbol}</Text>
+                    <View className='ml-3'>
+                      <Text className='text-lg font-medium'>{currency.code}</Text>
+                      <Text className='text-sm text-gray-500'>{currency.name}</Text>
+                    </View>
+                  </View>
+                  {selectedCurrency.code === currency.code && (
+                    <Ionicons name="checkmark" size={24} color="#2196F3" />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
             <TouchableOpacity
-              className="p-4"
-              onPress={() => setShowCurrencyModal(false)}
+              className='p-4 border-t border-gray-200'
+              onPress={() => {
+                setShowCurrencyModal(false);
+                setSearchQuery('');
+              }}
             >
-              <Text className="text-lg text-red-500">Cancel</Text>
+              <Text className='text-lg text-center text-red-500'>Cancel</Text>
             </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
-      {/* New Category Modal */}
-      <Modal
-        visible={showNewCategoryInput}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setShowNewCategoryInput(false)}
-      >
-        <View className="flex-1 justify-end">
-          <View className="bg-white rounded-t-3xl">
-            <View className="p-4 border-b border-gray-200">
-              <Text className="text-xl font-bold">Add New Category</Text>
-            </View>
-            <View className="p-4">
-              <TextInput
-                className="p-4 bg-gray-50 rounded-xl mb-4"
-                placeholder="Enter category name"
-                value={newCategoryName}
-                onChangeText={setNewCategoryName}
-                placeholderTextColor="#666"
-              />
-              <TouchableOpacity
-                onPress={() => handleAddCustomCategory(newCategoryName)}
-                className={`p-4 rounded-xl mb-2 ${type === 'income' ? 'bg-green-500' : 'bg-red-500'}`}
-                disabled={!newCategoryName.trim()}
-              >
-                <Text className="text-white text-lg font-semibold text-center">Add Category</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => {
-                  setShowNewCategoryInput(false);
-                  setNewCategoryName('');
-                }}
-                className="p-4"
-              >
-                <Text className="text-lg text-red-500 text-center">Cancel</Text>
-              </TouchableOpacity>
-            </View>
           </View>
         </View>
       </Modal>
