@@ -6,6 +6,7 @@ import { incomeCategories, expenseCategories } from '../utils/categories';
 import { useCurrency } from '../context/CurrencyContext';
 import { convertAmount } from '../utils/currency';
 import FilterModal from '../components/FilterModal';
+import BottomNavBar from '../components/BottomNavBar';
 
 type TransactionsScreenProps = {
   route: { params: { transactions: Transaction[] } };
@@ -150,6 +151,7 @@ export default function TransactionsScreen({ route, navigation }: TransactionsSc
         setFilters={setFilters}
         onApply={applyFilters}
       />
+      <BottomNavBar />
     </SafeAreaView>
   );
-} 
+}

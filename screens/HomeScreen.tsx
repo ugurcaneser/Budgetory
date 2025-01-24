@@ -11,6 +11,7 @@ import { incomeCategories, expenseCategories } from '../utils/categories';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Category } from '../types';
+import BottomNavBar from '../components/BottomNavBar';
 
 type RootStackParamList = {
   Home: undefined;
@@ -437,6 +438,7 @@ export default function HomeScreen() {
           />
         </DrawerLayout>
       </GestureHandlerRootView>
+      <BottomNavBar />
     </SafeAreaView>
   );
 }

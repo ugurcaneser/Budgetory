@@ -5,18 +5,18 @@ import HomeScreen from './screens/HomeScreen';
 import { CurrencyProvider } from './context/CurrencyContext';
 import { NavigationContainer } from '@react-navigation/native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import TransactionsScreen from './screens/TransactionsScreen';
 import { createStackNavigator } from '@react-navigation/stack';
-import { Transaction } from './utils/storage';  // Transaction tipini import edin
+import { Transaction } from './utils/storage';
 import AboutScreen from './screens/AboutScreen';
 import { enableScreens } from 'react-native-screens';
+import ChartScreen from './screens/ChartScreen';
 
 enableScreens();
 
-// Navigation için tip tanımlaması
+// Navigation type definitions
 type RootStackParamList = {
   Home: undefined;
-  Transactions: { transactions: Transaction[] };
+  Chart: undefined;
   About: undefined;
 };
 
@@ -30,9 +30,21 @@ export default function App() {
         <CurrencyProvider>
           <NavigationContainer>
             <Stack.Navigator>
-              <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
-              <Stack.Screen name="Transactions" component={TransactionsScreen} options={{ headerShown: false }} />
-              <Stack.Screen name="About" component={AboutScreen} />
+              <Stack.Screen 
+                name="Home" 
+                component={HomeScreen} 
+                options={{ headerShown: false }} 
+              />
+              <Stack.Screen 
+                name="Chart" 
+                component={ChartScreen} 
+                options={{ headerShown: false }} 
+              />
+              <Stack.Screen 
+                name="About" 
+                component={AboutScreen} 
+                options={{ title: 'About' }}
+              />
             </Stack.Navigator>
           </NavigationContainer>
         </CurrencyProvider>
