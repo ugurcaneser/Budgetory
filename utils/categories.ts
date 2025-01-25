@@ -4,6 +4,7 @@ export interface Category {
   type: 'income' | 'expense';
   image: any | null;
   icon: string;
+  color: string; 
 }
 
 // Income Categories
@@ -13,28 +14,32 @@ export const incomeCategories: Category[] = [
     name: 'Salary',
     type: 'income',
     image: require('../assets/category_icons/salary.png'),
-    icon: 'cash'
+    icon: 'cash',
+    color: '#4CAF50' 
   },
   {
     id: 'investment',
     name: 'Investment',
     type: 'income',
     image: require('../assets/category_icons/investment.png'),
-    icon: 'trending-up'
+    icon: 'trending-up',
+    color: '#2196F3' 
   },
   {
     id: 'freelance',
     name: 'Freelance',
     type: 'income',
     image: require('../assets/category_icons/freelance.png'),
-    icon: 'laptop'
+    icon: 'laptop',
+    color: '#9C27B0' 
   },
   {
     id: 'other_income',
     name: 'Other',
     type: 'income',
     image: require('../assets/category_icons/other_income.png'),
-    icon: 'add-circle'
+    icon: 'add-circle',
+    color: '#607D8B' 
   }
 ];
 
@@ -45,21 +50,23 @@ export const expenseCategories: Category[] = [
     name: 'Food',
     type: 'expense',
     image: require('../assets/category_icons/food.png'),
-    icon: 'restaurant'
+    icon: 'restaurant',
+    color: '#FF5722' 
   },
   {
     id: 'transport',
     name: 'Transport',
     type: 'expense',
     image: require('../assets/category_icons/transport.png'),
-    icon: 'car'
+    icon: 'car',
+    color: '#FFC107' 
   },
-  
   {
     id: 'other_expense',
     name: 'Other',
     type: 'expense',
     image: require('../assets/category_icons/other_expense.png'),
-    icon: 'add-circle'
+    icon: 'add-circle',
+    color: '#795548' 
   }
 ];
