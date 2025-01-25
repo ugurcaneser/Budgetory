@@ -95,6 +95,11 @@ export default function BottomNavBar({ onTransactionAdded }: Props) {
       name: 'Chart', 
       icon: 'bar-chart-outline',
       route: 'Chart'
+    },
+    {
+      name: 'About',
+      icon: 'information-circle-outline',
+      route: 'About'
     }
   ];
 
