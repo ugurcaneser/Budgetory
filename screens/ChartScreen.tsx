@@ -12,6 +12,7 @@ import type { StackNavigationProp } from '@react-navigation/stack';
 type RootStackParamList = {
   Home: undefined;
   Chart: undefined;
+  Settings: undefined;
 };
 
 type NavigationProp = StackNavigationProp<RootStackParamList>;

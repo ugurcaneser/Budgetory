@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, SafeAreaView, Platform, Image, Alert, TextInput } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, SafeAreaView, Platform, Image, Alert } from 'react-native';
 import SummaryCard from '../components/SummaryCard';
 import { Ionicons } from '@expo/vector-icons';
 import { Transaction, loadTransactions, loadTotals, saveTransactions, saveTotals } from '../utils/storage';
@@ -13,7 +13,7 @@ import BottomNavBar from '../components/BottomNavBar';
 type RootStackParamList = {
   Home: undefined;
   Chart: undefined;
-  About: undefined;
+  Settings: undefined;
 };
 
 type NavigationProp = StackNavigationProp<RootStackParamList>;
@@ -25,9 +25,6 @@ export default function HomeScreen() {
   const [exchangeRates, setExchangeRates] = useState<{[key: string]: number}>({});
   const { selectedCurrency } = useCurrency();
   const navigation = useNavigation<NavigationProp>();
-  const [isSearchVisible, setIsSearchVisible] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filteredTransactions, setFilteredTransactions] = useState<Transaction[]>([]);
 
   useEffect(() => {
     loadSavedData();
@@ -60,42 +57,6 @@ export default function HomeScreen() {
     }
   };
 
-  const formatAmount = (amount: number, currency: string) => {
-    if (!exchangeRates[currency]) return `${selectedCurrency.symbol}${amount.toFixed(2)}`;
-    
-    const convertedAmount = currency === selectedCurrency.code
-      ? amount
-      : convertAmount(amount, currency, selectedCurrency.code, exchangeRates);
-    
-    return `${selectedCurrency.symbol}${convertedAmount.toFixed(2)}`;
-  };
-
-  const toggleSearch = () => {
-    setIsSearchVisible(!isSearchVisible);
-    if (isSearchVisible) {
-      setSearchQuery('');
-      setFilteredTransactions([]);
-    }
-  };
-
-  const handleSearch = (text: string) => {
-    setSearchQuery(text);
-    if (text.trim() === '') {
-      setFilteredTransactions([]);
-      return;
-    }
-
-    const searchText = text.toLowerCase();
-    const filtered = transactions.filter(transaction => {
-      const category = getCategoryDetails(transaction);
-      return (
-        category.name.toLowerCase().includes(searchText) ||
-        transaction.description?.toLowerCase().includes(searchText)
-      );
-    });
-    setFilteredTransactions(filtered);
-  };
-
   const getCategoryDetails = (transaction: Transaction) => {
     const defaultCategories = transaction.type === 'income' ? incomeCategories : expenseCategories;
     return defaultCategories.find(cat => cat.id === transaction.categoryId) || defaultCategories[0];
@@ -103,65 +64,23 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView className='flex-1 bg-white'>
-      <View className='px-4 py-2'>
-        {!isSearchVisible ? (
-          <View className='flex-row justify-end items-center'>
-            <TouchableOpacity
-              className='p-2'
-              onPress={toggleSearch}
-            >
-              <Ionicons name="search" size={24} color="#374151" />
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <View className='flex-row items-center bg-gray-100 rounded-lg px-2'>
-            <TouchableOpacity
-              className='p-2'
-              onPress={toggleSearch}
-            >
-              <Ionicons name="arrow-back" size={24} color="#374151" />
-            </TouchableOpacity>
-            <TextInput
-              className='flex-1 py-2 px-3'
-              placeholder="Search transactions..."
-              value={searchQuery}
-              onChangeText={handleSearch}
-              autoFocus
-            />
-            {searchQuery.length > 0 && (
-              <TouchableOpacity
-                className='p-2'
-                onPress={() => {
-                  setSearchQuery('');
-                  setFilteredTransactions([]);
-                }}
-              >
-                <Ionicons name="close" size={20} color="#374151" />
-              </TouchableOpacity>
-            )}
-          </View>
-        )}
-      </View>
-
       <ScrollView 
         className='flex-1'
         contentContainerStyle={{ paddingTop: Platform.OS === 'android' ? 0 : 0 }}
       >
-        {!isSearchVisible && (
-          <View className='px-4'>
-            <SummaryCard 
-              totalIncome={totalIncome}
-              totalExpense={totalExpense}
-            />
-          </View>
-        )}
+        <View className='px-4'>
+          <SummaryCard 
+            totalIncome={totalIncome}
+            totalExpense={totalExpense}
+          />
+        </View>
 
         <View className='px-6 mt-4 mb-32'>
           <Text className='text-xl font-bold text-gray-800 mb-2'>
-            {searchQuery ? 'Search Results' : 'Recent Transactions'}
+            Recent Transactions
           </Text>
           
-          {(searchQuery ? filteredTransactions : transactions.slice(0, 5)).map((transaction, index) => {
+          {transactions.slice(0, 5).map((transaction, index) => {
             const category = getCategoryDetails(transaction);
             return (
               <TouchableOpacity
@@ -180,88 +99,78 @@ export default function HomeScreen() {
                         style: 'destructive',
                         onPress: async () => {
                           const updatedTransactions = transactions.filter(t => t.id !== transaction.id);
+                          await saveTransactions(updatedTransactions);
+                          
+                          // Update totals
+                          if (transaction.type === 'income') {
+                            const newTotalIncome = totalIncome - transaction.amount;
+                            setTotalIncome(newTotalIncome);
+                            await saveTotals(newTotalIncome, totalExpense);
+                          } else {
+                            const newTotalExpense = totalExpense - transaction.amount;
+                            setTotalExpense(newTotalExpense);
+                            await saveTotals(totalIncome, newTotalExpense);
+                          }
+                          
                           setTransactions(updatedTransactions);
-                          
-                          // Totalleri güncelle
-                          const newTotalIncome = updatedTransactions
-                            .filter(t => t.type === 'income')
-                            .reduce((sum, t) => sum + t.amount, 0);
-                          const newTotalExpense = updatedTransactions
-                            .filter(t => t.type === 'expense')
-                            .reduce((sum, t) => sum + t.amount, 0);
-                          
-                          setTotalIncome(newTotalIncome);
-                          setTotalExpense(newTotalExpense);
-                          
-                          // Verileri kaydet
-                          await Promise.all([
-                            saveTransactions(updatedTransactions),
-                            saveTotals(newTotalIncome, newTotalExpense)
-                          ]);
-                          
-                          loadSavedData();
                         },
                       },
-                    ],
-                    { cancelable: true }
+                    ]
                   );
                 }}
-                delayLongPress={300}
+                className={`flex-row items-center justify-between p-4 mb-2 rounded-xl ${
+                  index % 2 === 0 ? 'bg-gray-50' : 'bg-white'
+                }`}
               >
-                <View className='py-3'>
-                  <View className='flex-row justify-between items-center'>
-                    <View className='flex-row items-center flex-1 mr-3'>
-                      {category.image ? (
-                        <Image 
-                          source={category.image}
-                          className='w-8 h-8 mr-3'
-                          resizeMode='contain'
-                        />
-                      ) : (
-                        <View className="mr-3">
-                          <Ionicons 
-                            name={category.icon as any} 
-                            size={24} 
-                            color={transaction.type === 'income' ? '#22c55e' : '#ef4444'} 
-                          />
-                        </View>
-                      )}
-                      <View className='flex-1'>
-                        <View className='flex-row items-center'>
-                          <Text className='text-base font-medium text-gray-800'>{category.name}</Text>
-                          <Text className='text-sm text-gray-400 ml-2'>
-                            {new Date(transaction.date).toLocaleDateString('en-US', {
-                              month: 'short',
-                              day: 'numeric'
-                            })}
-                          </Text>
-                        </View>
-                        {transaction.description && (
-                          <Text className='text-sm text-gray-400' numberOfLines={1}>
-                            {transaction.description}
-                          </Text>
-                        )}
-                      </View>
+                <View className='flex-row items-center flex-1'>
+                  {category.image ? (
+                    <Image 
+                      source={category.image}
+                      className='w-8 h-8 mr-3'
+                      resizeMode='contain'
+                    />
+                  ) : (
+                    <View className="mr-3">
+                      <Ionicons 
+                        name={category.icon as any} 
+                        size={24} 
+                        color={transaction.type === 'income' ? '#22c55e' : '#ef4444'} 
+                      />
                     </View>
-                    <Text 
-                      className={`text-base font-medium ${
-                        transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
-                      }`}
-                    >
-                      {transaction.type === 'income' ? '+' : '-'} {formatAmount(transaction.amount, transaction.currency)}
-                    </Text>
-                  </View>
-                  {index < transactions.length - 1 && (
-                    <View className='h-[0.5px] bg-gray-100 mt-3' />
                   )}
+                  <View className='flex-1'>
+                    <View className='flex-row items-center'>
+                      <Text className='text-base font-medium text-gray-800'>{category.name}</Text>
+                      <Text className='text-sm text-gray-400 ml-2'>
+                        {new Date(transaction.date).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric'
+                        })}
+                      </Text>
+                    </View>
+                    {transaction.description && (
+                      <Text className='text-sm text-gray-400' numberOfLines={1}>
+                        {transaction.description}
+                      </Text>
+                    )}
+                  </View>
                 </View>
+                <Text 
+                  className={`text-base font-medium ${
+                    transaction.type === 'income' ? 'text-green-500' : 'text-red-500'
+                  }`}
+                >
+                  {transaction.type === 'income' ? '+' : '-'}
+                  {selectedCurrency.symbol}
+                  {transaction.amount.toLocaleString()}
+                </Text>
               </TouchableOpacity>
             );
           })}
 
-          {!searchQuery && transactions.length > 5 && (
-            <TouchableOpacity 
-              className='mt-4 py-3 bg-gray-50 rounded-lg'
+          {transactions.length > 5 && (
+            <TouchableOpacity
+              className='bg-gray-50 py-3 px-4 rounded-xl mt-2'
               onPress={() => navigation.navigate('Chart')}
             >
               <Text className='text-center text-gray-600 font-medium'>

@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
-import { View, TouchableOpacity, Text } from 'react-native';
+import { View, TouchableOpacity, Text, Modal, TextInput, ScrollView, Image, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import TransactionModal from './TransactionModal';
 import { Transaction, saveTransactions, saveTotals, loadTransactions, loadTotals } from '../utils/storage';
+import { incomeCategories, expenseCategories } from '../utils/categories';
+import { useCurrency } from '../context/CurrencyContext';
 
 type RootStackParamList = {
   Home: undefined;
   Chart: undefined;
-  About: undefined;
   Settings: undefined;
 };
 
@@ -31,7 +33,40 @@ export default function BottomNavBar({ onTransactionAdded }: Props) {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute();
   const [modalVisible, setModalVisible] = useState(false);
+  const [searchModalVisible, setSearchModalVisible] = useState(false);
   const [transactionType, setTransactionType] = useState<'income' | 'expense'>('income');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [filteredTransactions, setFilteredTransactions] = useState<Transaction[]>([]);
+  const { selectedCurrency } = useCurrency();
+
+  const handleSearch = async (text: string) => {
+    setSearchQuery(text);
+    if (text.trim() === '') {
+      setFilteredTransactions([]);
+      return;
+    }
+
+    try {
+      const allTransactions = await loadTransactions();
+      const searchText = text.toLowerCase();
+      const filtered = allTransactions.filter(transaction => {
+        const category = getCategoryDetails(transaction);
+        return (
+          category.name.toLowerCase().includes(searchText) ||
+          transaction.description?.toLowerCase().includes(searchText)
+        );
+      });
+      setFilteredTransactions(filtered);
+    } catch (error) {
+      console.error('Error searching transactions:', error);
+    }
+  };
+
+  const getCategoryDetails = (transaction: Transaction) => {
+    const defaultCategories = transaction.type === 'income' ? incomeCategories : expenseCategories;
+    return defaultCategories.find(cat => cat.id === transaction.categoryId) || defaultCategories[0];
+  };
 
   const handleAddTransaction = async (amount: number, description: string, currency: string, categoryId: string) => {
     const newTransaction: Transaction = {
@@ -75,6 +110,11 @@ export default function BottomNavBar({ onTransactionAdded }: Props) {
       route: 'Home'
     },
     { 
+      name: 'Search', 
+      icon: 'search-outline',
+      onPress: () => setSearchModalVisible(true)
+    },
+    { 
       name: 'Income', 
       icon: 'add-circle',
       color: '#4CAF50',
@@ -101,11 +141,6 @@ export default function BottomNavBar({ onTransactionAdded }: Props) {
       name: 'Settings',
       icon: 'settings-outline',
       route: 'Settings'
-    },
-    {
-      name: 'About',
-      icon: 'information-circle-outline',
-      route: 'About'
     }
   ];
 
@@ -145,9 +180,11 @@ export default function BottomNavBar({ onTransactionAdded }: Props) {
   };
 
   return (
-    <View className="bg-white border-t border-gray-200 pt-2">
-      <View className="flex-row justify-between items-center">
-        {menuItems.map(renderMenuItem)}
+    <>
+      <View className="bg-white border-t border-gray-200 pt-2">
+        <View className="flex-row justify-between items-center">
+          {menuItems.map(renderMenuItem)}
+        </View>
       </View>
 
       <TransactionModal
@@ -156,6 +193,118 @@ export default function BottomNavBar({ onTransactionAdded }: Props) {
         onSubmit={handleAddTransaction}
         type={transactionType}
       />
-    </View>
+
+      <Modal
+        visible={searchModalVisible}
+        animationType="slide"
+        onRequestClose={() => {
+          setSearchModalVisible(false);
+          setSearchQuery('');
+          setFilteredTransactions([]);
+        }}
+      >
+        <SafeAreaView className="flex-1 bg-white">
+          <View className="px-4 py-10 mt-2 border-b border-gray-200">
+            <View className="flex-row items-center bg-gray-100 rounded-lg px-2">
+              <TouchableOpacity
+                className="p-2"
+                onPress={() => {
+                  setSearchModalVisible(false);
+                  setSearchQuery('');
+                  setFilteredTransactions([]);
+                }}
+              >
+                <Ionicons name="arrow-back" size={24} color="#374151" />
+              </TouchableOpacity>
+              <TextInput
+                className="flex-1 py-2 px-3"
+                placeholder="Search transactions..."
+                value={searchQuery}
+                onChangeText={handleSearch}
+                autoFocus
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity
+                  className="p-2"
+                  onPress={() => {
+                    setSearchQuery('');
+                    setFilteredTransactions([]);
+                  }}
+                >
+                  <Ionicons name="close" size={20} color="#374151" />
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+
+          <ScrollView 
+            className="flex-1"
+            contentContainerStyle={{ 
+              paddingBottom: Platform.OS === 'ios' ? 20 : 0 
+            }}
+          >
+            {filteredTransactions.map((transaction) => {
+              const category = getCategoryDetails(transaction);
+              return (
+                <View
+                  key={transaction.id}
+                  className="flex-row items-center justify-between p-4 border-b border-gray-100"
+                >
+                  <View className="flex-row items-center flex-1">
+                    {category.image ? (
+                      <Image 
+                        source={category.image}
+                        className='w-8 h-8 mr-3'
+                        resizeMode='contain'
+                      />
+                    ) : (
+                      <View className="mr-3">
+                        <Ionicons 
+                          name={category.icon as any} 
+                          size={24} 
+                          color={transaction.type === 'income' ? '#22c55e' : '#ef4444'} 
+                        />
+                      </View>
+                    )}
+                    <View className="flex-1">
+                      <View className="flex-row items-center">
+                        <Text className="text-base font-medium text-gray-800">{category.name}</Text>
+                        <Text className="text-sm text-gray-400 ml-2">
+                          {new Date(transaction.date).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric'
+                          })}
+                        </Text>
+                      </View>
+                      {transaction.description && (
+                        <Text className="text-sm text-gray-400" numberOfLines={1}>
+                          {transaction.description}
+                        </Text>
+                      )}
+                    </View>
+                  </View>
+                  <Text 
+                    className={`text-base font-medium ${
+                      transaction.type === 'income' ? 'text-green-500' : 'text-red-500'
+                    }`}
+                  >
+                    {transaction.type === 'income' ? '+' : '-'}
+                    {selectedCurrency.symbol}
+                    {transaction.amount.toLocaleString()}
+                  </Text>
+                </View>
+              );
+            })}
+            {searchQuery && filteredTransactions.length === 0 && (
+              <View className="p-4">
+                <Text className="text-center text-gray-500">
+                  No transactions found
+                </Text>
+              </View>
+            )}
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
+    </>
   );
 }

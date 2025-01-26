@@ -6,10 +6,10 @@ import { CurrencyProvider } from './context/CurrencyContext';
 import { NavigationContainer } from '@react-navigation/native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { createStackNavigator } from '@react-navigation/stack';
-import AboutScreen from './screens/AboutScreen';
-import { enableScreens } from 'react-native-screens';
 import ChartScreen from './screens/ChartScreen';
 import SettingsScreen from './screens/SettingsScreen';
+import AboutScreen from './screens/AboutScreen';
+import { enableScreens } from 'react-native-screens';
 
 enableScreens();
 
@@ -40,11 +40,6 @@ export default function App() {
                 name="Chart" 
                 component={ChartScreen} 
                 options={{ headerShown: false }} 
-              />
-              <Stack.Screen 
-                name="About" 
-                component={AboutScreen} 
-                options={{ title: 'About' }}
               />
               <Stack.Screen 
                 name="Settings" 
