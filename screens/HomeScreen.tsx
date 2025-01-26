@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, SafeAreaView, Platform, Image, Alert, TextInput } from 'react-native';
 import SummaryCard from '../components/SummaryCard';
 import { Ionicons } from '@expo/vector-icons';
-import { Transaction, loadTransactions, loadTotals, saveTransactions } from '../utils/storage';
+import { Transaction, loadTransactions, loadTotals, saveTransactions, saveTotals } from '../utils/storage';
 import { fetchExchangeRates, convertAmount } from '../utils/currency';
 import { useCurrency } from '../context/CurrencyContext';
 import { incomeCategories, expenseCategories } from '../utils/categories';
@@ -36,13 +36,25 @@ export default function HomeScreen() {
   const loadSavedData = async () => {
     try {
       const savedTransactions = await loadTransactions();
-      const savedTotals = await loadTotals();
       const rates = await fetchExchangeRates(selectedCurrency.code);
       
+      // Transaction'lara göre totalleri hesapla
+      const newTotalIncome = savedTransactions
+        .filter(t => t.type === 'income')
+        .reduce((sum, t) => sum + t.amount, 0);
+      
+      const newTotalExpense = savedTransactions
+        .filter(t => t.type === 'expense')
+        .reduce((sum, t) => sum + t.amount, 0);
+      
+      // State'leri güncelle
       setTransactions(savedTransactions);
-      setTotalIncome(savedTotals.totalIncome || 0);
-      setTotalExpense(savedTotals.totalExpense || 0);
+      setTotalIncome(newTotalIncome);
+      setTotalExpense(newTotalExpense);
       setExchangeRates(rates);
+
+      // Totalleri kaydet
+      await saveTotals(newTotalIncome, newTotalExpense);
     } catch (error) {
       console.error('Error loading saved data:', error);
     }
@@ -169,7 +181,24 @@ export default function HomeScreen() {
                         onPress: async () => {
                           const updatedTransactions = transactions.filter(t => t.id !== transaction.id);
                           setTransactions(updatedTransactions);
-                          await saveTransactions(updatedTransactions);
+                          
+                          // Totalleri güncelle
+                          const newTotalIncome = updatedTransactions
+                            .filter(t => t.type === 'income')
+                            .reduce((sum, t) => sum + t.amount, 0);
+                          const newTotalExpense = updatedTransactions
+                            .filter(t => t.type === 'expense')
+                            .reduce((sum, t) => sum + t.amount, 0);
+                          
+                          setTotalIncome(newTotalIncome);
+                          setTotalExpense(newTotalExpense);
+                          
+                          // Verileri kaydet
+                          await Promise.all([
+                            saveTransactions(updatedTransactions),
+                            saveTotals(newTotalIncome, newTotalExpense)
+                          ]);
+                          
                           loadSavedData();
                         },
                       },

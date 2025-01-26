@@ -10,6 +10,7 @@ type RootStackParamList = {
   Home: undefined;
   Chart: undefined;
   About: undefined;
+  Settings: undefined;
 };
 
 type NavigationProp = StackNavigationProp<RootStackParamList>;
@@ -95,6 +96,11 @@ export default function BottomNavBar({ onTransactionAdded }: Props) {
       name: 'Chart', 
       icon: 'bar-chart-outline',
       route: 'Chart'
+    },
+    {
+      name: 'Settings',
+      icon: 'settings-outline',
+      route: 'Settings'
     },
     {
       name: 'About',

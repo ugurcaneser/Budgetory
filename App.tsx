@@ -6,10 +6,10 @@ import { CurrencyProvider } from './context/CurrencyContext';
 import { NavigationContainer } from '@react-navigation/native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { createStackNavigator } from '@react-navigation/stack';
-import { Transaction } from './utils/storage';
 import AboutScreen from './screens/AboutScreen';
 import { enableScreens } from 'react-native-screens';
 import ChartScreen from './screens/ChartScreen';
+import SettingsScreen from './screens/SettingsScreen';
 
 enableScreens();
 
@@ -18,6 +18,7 @@ type RootStackParamList = {
   Home: undefined;
   Chart: undefined;
   About: undefined;
+  Settings: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -44,6 +45,11 @@ export default function App() {
                 name="About" 
                 component={AboutScreen} 
                 options={{ title: 'About' }}
+              />
+              <Stack.Screen 
+                name="Settings" 
+                component={SettingsScreen} 
+                options={{ headerShown: false }} 
               />
             </Stack.Navigator>
           </NavigationContainer>
